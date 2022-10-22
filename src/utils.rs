@@ -24,7 +24,7 @@ impl fmt::Display for PathError {
 
 // end error
 
-// check if a path exists and if it's a directory, otherwise panic.
+// check if a path exists and if it's a directory, otherwise return an error.
 pub fn check_path(path: &str) -> Result<bool, PathError>  {
 
     let path_path = Path::new(&path);
@@ -41,4 +41,21 @@ pub fn check_path(path: &str) -> Result<bool, PathError>  {
         return Err(PathError::NotDirectory);
     }
     Ok(true)
+}
+
+
+// check if a path exists and if it's a directory, otherwise panic.
+pub fn check_path_panic(path: &str) {
+
+    let path_path = Path::new(&path);
+
+    // check if path exists.
+    if !Path::exists(path_path) {
+        panic!("{} doesn't exist.", path);
+    }
+    // check if path is a directory. Technically, we could have just done this
+    // check but we wouldn't know if the path existed vs. is not a directory.
+    if !Path::is_dir(path_path) {
+        panic!("{} is not a directory.", path)
+    }
 }
