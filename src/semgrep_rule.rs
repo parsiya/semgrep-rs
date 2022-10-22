@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Serialize, Deserialize};
 use serde_with::{serde_as, OneOrMany, skip_serializing_none};
 
@@ -356,7 +358,7 @@ pub struct Rename {
 impl RuleFile {
 
     // split the rules in a file and return each one as a RuleFiles.
-    fn split(&self) -> Vec<RuleFile> {
+    pub fn split(&self) -> Vec<RuleFile> {
         
         let mut rule_files: Vec<RuleFile> = Vec::new();
 
@@ -366,4 +368,60 @@ impl RuleFile {
         }
         rule_files
     }
+
+    // return the index of rules in a file.
+    pub fn index(&self) -> HashMap<String, Rule> {
+        
+        let mut index: HashMap<String, Rule>= HashMap::new();
+
+        for rule in self.rules.clone() {
+
+            index.insert(rule.id.to_owned(), rule);
+        }
+        index
+    }
+
+    // convert a YAML string to a RuleFile.
+    pub fn from_yaml(yaml: String) -> serde_yaml::Result<RuleFile> {
+
+    // deserialize the rule
+        // let deserialized_rule_file =  serde_yaml::from_str::<RuleFile>(&yaml)?;
+
+        Ok(serde_yaml::from_str::<RuleFile>(&yaml)?)
+    }
+
 }
+
+// tests
+#[cfg(test)]
+mod tests {
+    use crate::read_file_to_string;
+    use super::RuleFile;
+
+    #[test]
+    fn test_rulefile() {
+        let content = read_file_to_string("tests/multiple-rules.yaml").unwrap();
+        let rule_file = RuleFile::from_yaml(content).unwrap();
+
+        // check that files have been properly deserialized.
+        assert_eq!(rule_file.rules[0].id, "snprintf-insecure-use");
+        assert_eq!(rule_file.rules[1].id, "potentially-uninitialized-pointer");
+        assert_eq!(rule_file.rules[2].id, "memcpy-insecure-use");
+        
+        let split = rule_file.split();
+        assert_eq!(split[0].rules[0].id, "snprintf-insecure-use");
+        assert_eq!(split[1].rules[0].id, "potentially-uninitialized-pointer");
+        assert_eq!(split[2].rules[0].id, "memcpy-insecure-use");
+
+        let index = rule_file.index();
+        assert_eq!(index["snprintf-insecure-use"].id, "snprintf-insecure-use");
+        assert_eq!(index["potentially-uninitialized-pointer"].id, "potentially-uninitialized-pointer");
+        assert_eq!(index["memcpy-insecure-use"].id, "memcpy-insecure-use");
+    }
+
+}
+
+
+
+
+

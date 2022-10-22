@@ -1,0 +1,54 @@
+rules:
+- id: snprintf-insecure-use
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $RET = snprintf($BUF, ...);
+            ...
+            $BUF[$RET] = $VAR;
+        - pattern: |
+            $LEN = snprintf($NULL, 0, ...);
+            ...
+            $P = malloc($LEN);
+  message: Potentially vulnerable snprintf usage.
+  languages:
+    - cpp
+    - c
+  severity: WARNING
+  metadata:
+    category: hotspot
+    references:
+      - https://dustri.org/b/playing-with-weggli.html
+- id: potentially-uninitialized-pointer
+  patterns:
+    - pattern: |
+        $TYPE* $BUF[$SIZE];
+        ...
+        $FUNC(..., &$BUF, ...);
+    - pattern-not-inside: |
+        $TYPE* $BUF[$SIZE];
+        ...
+        $BUF = $VALUE;
+        ...
+        $FUNC(..., &$BUF, ...);
+  message: $BUF pointer must be initialized before use.
+  languages:
+    - cpp
+    - c
+  severity: INFO
+  metadata:
+    category: hotspot
+- id: memcpy-insecure-use
+  pattern: |
+      $TYPE $BUF[$SIZE];
+      ...
+      memcpy(..., $BUF, ...);
+  message: Check the third parameter against the size of both destination and source.
+  languages:
+    - cpp
+    - c
+  severity: WARNING
+  metadata:
+    category: hotspot
+    references:
+      - https://dustri.org/b/playing-with-weggli.html
