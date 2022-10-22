@@ -26,7 +26,7 @@ impl GenericRuleFile {
         let mut index: HashMap<String, Mapping> = HashMap::new();
 
         for rule in self.rules.clone() {
-            index.insert(rule.id.to_owned(), rule);
+            index.insert(rule.get("id").unwrap().as_str().unwrap().to_string(), rule);
         }
         index
     }
