@@ -129,7 +129,8 @@ pub fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec
     Result<HashMap<String, semgrep_rule::Rule>, utils::PathError> {
     
     // check the path.
-    utils::check_path(&path)?;
+    // ZZZ is this needed? Supposedly we will checke the path before calling this function.
+    // utils::check_path(&path)?;
 
     let rule_paths: Vec<String> = find_rules(path, include, exclude);
 
@@ -139,9 +140,9 @@ pub fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec
 
         let content = match read_file_to_string(&rule_file) {
             Ok(cn) => cn,
-            Err(_) => {
+            Err(e) => {
                 // ZZZ need error logging
-                // println!("Error reading file: {}", e.to_string());
+                println!("Error reading file: {}", e.to_string());
                 continue;
             }
         };
@@ -149,8 +150,9 @@ pub fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec
         // create a rule file from the string
         let rule_file = match RuleFile::from_yaml(content) {
             Ok(rf) => rf,
-            Err(_) => {
+            Err(e) => {
                 // ZZZ need error logging
+                println!("Error deserializing file: {}", e.to_string());
                 continue;
             }
         };
