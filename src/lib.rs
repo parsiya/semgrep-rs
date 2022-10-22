@@ -3,8 +3,9 @@ use std::{fs, collections::HashMap, io};
 use semgrep_rule::RuleFile;
 use walkdir::{DirEntry, WalkDir};
 
-mod semgrep_rule;
-mod utils;
+pub mod semgrep_rule;
+pub mod utils;
+pub mod semgrep_generic_rule;
 
 // read a file and return a String.
 pub fn read_file_to_string(file_path: &str) -> io::Result<String> {
