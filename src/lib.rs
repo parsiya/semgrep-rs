@@ -125,7 +125,7 @@ fn test_find_rules_include() {
 
 
 // return an index of rules where the key is rule ID and the value is the rule.
-fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) ->
+pub fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) ->
     Result<HashMap<String, semgrep_rule::Rule>, utils::PathError> {
     
     // check the path.
