@@ -1,12 +1,13 @@
 use std::{vec, collections::HashMap};
 
 use serde::{Serialize, Deserialize};
-use serde_yaml:: Mapping;
+
+type GenericRule = serde_yaml::Mapping;
 
 // This allows us to split the rules without caring about their contents.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GenericRuleFile {
-    pub rules: Vec<Mapping>,
+    pub rules: Vec<GenericRule>,
 }
 
 impl GenericRuleFile {
@@ -16,14 +17,15 @@ impl GenericRuleFile {
         let mut rule_files: Vec<GenericRuleFile> = Vec::new();
 
         for rule in self.rules.clone() {
-            let new_rules: Vec<Mapping> = vec![rule];
+            let new_rules: Vec<GenericRule> = vec![rule];
             rule_files.push(GenericRuleFile { rules: new_rules });
         }
         rule_files
     }
 
-    pub fn index(&self) -> HashMap<String, Mapping> {
-        let mut index: HashMap<String, Mapping> = HashMap::new();
+    // create an index from the rules in the GenericRuleFile.
+    pub fn index(&self) -> HashMap<String, GenericRule> {
+        let mut index: HashMap<String, GenericRule> = HashMap::new();
 
         for rule in self.rules.clone() {
             index.insert(rule.get("id").unwrap().as_str().unwrap().to_string(), rule);
