@@ -189,14 +189,14 @@ pub struct RuleIndex {
 
 impl RuleIndex {
 
-    pub fn new () -> RuleIndex {
+    pub fn new() -> RuleIndex {
         let index: HashMap<String, semgrep_rule::Rule> = HashMap::new();
         let ri: RuleIndex = RuleIndex { index };
         ri
     }
 
     // create and return a new RuleIndex.
-    pub fn create_index(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) -> RuleIndex {
+    pub fn from_path(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) -> RuleIndex {
         let mut ri = RuleIndex::new();
         ri.populate_from_path(path, include, exclude);
         ri
