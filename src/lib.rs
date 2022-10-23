@@ -1,11 +1,13 @@
-use std::{fs, collections::HashMap, io};
+use std::{fs, collections::HashMap, io, vec};
 
-use semgrep_rule::RuleFile;
+use semgrep_rule::{RuleFile, Rule};
 use walkdir::{DirEntry, WalkDir};
 
 pub mod semgrep_rule;
 pub mod utils;
 pub mod semgrep_generic_rule;
+
+// ----- START read_file_to_string
 
 // read a file and return a String.
 pub fn read_file_to_string(file_path: &str) -> io::Result<String> {
@@ -19,7 +21,10 @@ fn test_read_file_to_string() {
     assert_eq!(content, "# this is not a rule and should not be found in tests");
 }
 
+// ----- END read_file_to_string
 
+
+// ----- START find_rules
 
 // returns true if a DirEntry (file or directory) is hidden.
 fn is_hidden(entry: &DirEntry) -> bool {
@@ -123,6 +128,10 @@ fn test_find_rules_include() {
     assert_eq!(results.sort(), control.sort());
 }
 
+// ----- END find_rules
+
+
+// ----- START index_rules
 
 // return an index of rules where the key is rule ID and the value is the rule.
 pub fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) ->
@@ -167,3 +176,55 @@ pub fn index_rules(path: String, include: Option<Vec<&str>>, exclude: Option<Vec
     Ok(rule_index)
 }
 
+
+// ----- END index_rules
+
+
+// ----- START RuleIndex
+
+// contains an index of rules.
+pub struct RuleIndex {
+    index: HashMap<String, semgrep_rule::Rule>
+}
+
+impl RuleIndex {
+    pub fn populate_from_path(&mut self, path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) {
+        // ZZZ add error handling
+        self.index = index_rules(path, include, exclude).unwrap();
+
+    }
+
+    // creates a RuleFile with all the rule IDs.
+    pub fn create_ruleset(&self, rule_ids: Vec<String>) -> RuleFile {
+        let mut rules: Vec<Rule> = Vec::new();
+
+        for id in rule_ids {
+            // check if the key exists
+            match self.index.contains_key(&id) {
+                true => rules.push(self.index[&id].clone()),
+                false => continue,
+            }
+        }
+
+        let rf: RuleFile = RuleFile { rules };
+        rf
+    }
+}
+
+
+
+// // return a RuleFile containing the ruleset.
+// pub fn merge_rulefiles(rule_ids: Vec<String>) -> RuleFile {
+
+//     let mut merged_rules: Vec<Rule> = Vec::new();
+
+//     for rf in rule_files {
+//         merged_rules.extend(rf.rules);
+//     }
+
+
+
+// }
+
+
+// ----- END index_rules
