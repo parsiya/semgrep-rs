@@ -188,6 +188,20 @@ pub struct RuleIndex {
 }
 
 impl RuleIndex {
+
+    pub fn new () -> RuleIndex {
+        let index: HashMap<String, semgrep_rule::Rule> = HashMap::new();
+        let ri: RuleIndex = RuleIndex { index };
+        ri
+    }
+
+    // create and return a new RuleIndex.
+    pub fn create_index(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) -> RuleIndex {
+        let mut ri = RuleIndex::new();
+        ri.populate_from_path(path, include, exclude);
+        ri
+    }
+
     pub fn populate_from_path(&mut self, path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) {
         // ZZZ add error handling
         self.index = index_rules(path, include, exclude).unwrap();
@@ -210,6 +224,8 @@ impl RuleIndex {
         rf
     }
 }
+
+
 
 
 
