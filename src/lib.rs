@@ -1,15 +1,14 @@
-use std::collections::HashMap;
+pub mod utils;
+pub use utils::{check_path, check_path_panic};
 
-mod utils;
 mod generic_rule_index;
+pub use generic_rule_index::GenericRuleIndex;
+
 mod semgrep_generic_rule;
+pub use semgrep_generic_rule::{GenericRule, GenericRuleExt, GenericRuleFile};
 
-pub type GenericRuleIndex = generic_rule_index::GenericRuleIndex;
-pub type GenericRuleFile = semgrep_generic_rule::GenericRuleFile;
-pub type GenericRule = serde_yaml::Mapping;
+mod error;
+pub use error::{Error, Result};
 
-
-pub fn create_generic_rule_index(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) ->
-Result<HashMap<String, GenericRule>, utils::PathError> {
-    return generic_rule_index::generic_rule_index(path, include, exclude);
-}
+mod policy;
+pub use policy::{Policy, PolicyIndex};

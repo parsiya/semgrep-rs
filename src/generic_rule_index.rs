@@ -1,84 +1,116 @@
 use std::collections::HashMap;
 
-use crate::utils::{self, find_rules, read_file_to_string};
+use crate::error::{Error, Result};
 use crate::semgrep_generic_rule::GenericRuleFile;
+use crate::utils::{find_files, read_file_to_string};
+use crate::GenericRule;
 
-type GenericRule = serde_yaml::Mapping;
+use log::error;
 
 // ----- START GenericRuleIndex
 
+#[allow(dead_code)]
 pub struct GenericRuleIndex {
-    index: HashMap<String, GenericRule>
+    index: HashMap<String, GenericRule>,
+    complete: bool,
 }
 
 impl GenericRuleIndex {
-
-    pub fn new() -> GenericRuleIndex {
+    fn new(complete: bool) -> GenericRuleIndex {
         let index: HashMap<String, GenericRule> = HashMap::new();
-        let gri: GenericRuleIndex = GenericRuleIndex { index };
+        let gri: GenericRuleIndex = GenericRuleIndex { index, complete };
         gri
     }
 
-    pub fn from_path_simple(path: String) -> GenericRuleIndex {
-        return GenericRuleIndex::from_path(path, None, None);
+    pub fn get_index(&self) -> &HashMap<String, GenericRule> {
+        return &self.index;
+    }
+
+    pub fn get_ids(&self) -> Vec<String> {
+        let out: Vec<String> = self.index.keys().map(|k| k.to_string()).collect();
+        out
+    }
+
+    pub fn from_path_simple(path: &str) -> GenericRuleIndex {
+        return GenericRuleIndex::from_path(path, None, None, false);
     }
 
     // create and return a new GenericRuleIndex.
-    pub fn from_path(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) -> GenericRuleIndex {
-        let mut gri = GenericRuleIndex::new();
-        gri.populate_from_path(path, include, exclude);
+    pub fn from_path(
+        path: &str,
+        include: Option<Vec<&str>>,
+        exclude: Option<Vec<&str>>,
+        complete: bool,
+    ) -> GenericRuleIndex {
+        let mut gri = GenericRuleIndex::new(complete);
+
+        // ZZZ add error handling?
+        // we will panic here if there are errors but I don't think we care, we
+        // want to know if our rule index was not created successfully so the
+        // server can shut down and the user can fix the error.
+        gri.index = create_generic_rule_index(&path, include, exclude, complete).unwrap();
         gri
     }
 
-    pub fn populate_from_path(&mut self, path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) {
-        // ZZZ add error handling
-        self.index = generic_rule_index(path, include, exclude).unwrap();
+    // creates a RuleFile (that represents a Policy) with the provided rule IDs.
+    pub fn create_policy(&self, rule_ids: &Vec<String>) -> GenericRuleFile {
+        // let mut rules: Vec<GenericRule> = Vec::new();
+        // for id in &rule_ids {
+        //     if let Some(rule) = self.index.get(id) {
+        //         rules.push(rule.clone());
+        //     }
+        // }
 
+        // ChatGPT rewrite with combinators.
+        // What happens if the rule is not in the index?.
+        let rules: Vec<GenericRule> = rule_ids
+            .iter()
+            .filter_map(|id| self.index.get(id))
+            .cloned()
+            .collect();
+
+        GenericRuleFile { rules }
     }
 
-    // creates a RuleFile with all the rule IDs.
-    pub fn create_ruleset(&self, rule_ids: Vec<String>) -> GenericRuleFile {
-        let mut rules: Vec<GenericRule> = Vec::new();
-
-        for id in rule_ids {
-            // check if the key exists
-            match self.index.contains_key(&id) {
-                true => rules.push(self.index[&id].clone()),
-                false => continue,
-            }
-        }
-
-        let grf: GenericRuleFile = GenericRuleFile { rules };
-        grf
+    // returns a rule if it exists in the index, otherwise, returns None.
+    pub fn get_rule(&self, rule_id: &str) -> Option<GenericRule> {
+        self.index.get(rule_id).cloned()
     }
-
 }
-
 
 // ----- END GenericRuleIndex
 
-
-// ----- START index_rules
-
-// return an index of rules where the key is rule ID and the value is the rule.
-pub(crate) fn generic_rule_index(path: String, include: Option<Vec<&str>>, exclude: Option<Vec<&str>>) ->
-    Result<HashMap<String, GenericRule>, utils::PathError> {
-    
+// return an index of rules where the key is the rule ID and the value is the
+// rule.
+//
+// If `complete` it true, this function uses the same ID that Semgrep uses which
+// contains the path followed by the rule ID in the file. E.g., if the
+// /rules/cpp/security/buffer-overflow.cpp file contains the rule with ID
+// buffer-overflow, the complete ruleID will be
+// rules.cpp/security.buffer-overflow.buffer-overflow. Hence, rule ID is very
+// much dependent on the path of the registry passed to the server.
+//
+// If `complete` is false, just the rule ID from the file will be used.
+pub(crate) fn create_generic_rule_index(
+    path: &str,
+    include: Option<Vec<&str>>,
+    exclude: Option<Vec<&str>>,
+    complete: bool,
+) -> Result<HashMap<String, GenericRule>> {
     // check the path.
-    // ZZZ is this needed? Supposedly we will checke the path before calling this function.
+    // ZZZ is this needed? Supposedly we will check the path before calling this function.
     // utils::check_path(&path)?;
 
-    let rule_paths: Vec<String> = find_rules(path, include, exclude);
+    let rule_paths: Vec<String> = find_files(path, include, exclude);
 
     let mut rule_index: HashMap<String, GenericRule> = HashMap::new();
 
-    for rule_file in rule_paths {
-
-        let content = match read_file_to_string(&rule_file) {
+    for rule_file_path in rule_paths {
+        let content = match read_file_to_string(&rule_file_path) {
             Ok(cn) => cn,
             Err(e) => {
                 // ZZZ need error logging
-                println!("Error reading file: {}", e.to_string());
+                error!("Error reading file: {}", e.to_string());
                 continue;
             }
         };
@@ -88,20 +120,22 @@ pub(crate) fn generic_rule_index(path: String, include: Option<Vec<&str>>, exclu
             Ok(rf) => rf,
             Err(e) => {
                 // ZZZ need error logging
-                println!("Error deserializing file: {}", e.to_string());
+                error!("Error deserializing file: {}", e.to_string());
                 continue;
             }
         };
 
         // get the file index
-        let file_index: HashMap<String, GenericRule> = rule_file.index();
+        let file_index: HashMap<String, GenericRule> =
+            rule_file.create_index(&rule_file_path, complete);
 
         // merge it into the main index
         rule_index.extend(file_index);
     }
 
+    if rule_index.keys().len() == 0 {
+        return Error::wrap_str("Rule index is empty.");
+    }
+
     Ok(rule_index)
 }
-
-
-// ----- END index_rules
