@@ -4,8 +4,9 @@ supports interacting with Semgrep rules.
 
 ## Future Plans:
 
-1. Handle running and executing Semgrep CLI.
-2. Structs to parse the Semgrep output and do post-processing on the results.
+1. Add detailed structs and the ability to programmatically create rules.
+2. Handle running and executing Semgrep CLI.
+3. Structs to parse the Semgrep output and do post-processing on the results.
 
 **Note: Work in progress.** The interface is subject to change and might break
 backwards compatibility.
@@ -62,6 +63,14 @@ for rule in &rules {
     let err = utils::write_string_to_file(&path, &rule.to_string().unwrap());
 }
 ```
+
+I have more detailed structs in the [dev-old branch][dev-old-structs]. These
+structs allow you to extract all the rule fields (e.g., `pattern` or
+`metavariable`). The plan is to add them after I have the generic structs
+production ready. It will allow you to parse every field in a rule file and also
+create rules dynamically.
+
+[dev-old-structs]: https://github.com/parsiya/semgrep-rs/blob/dev-old/src/semgrep_rule.rs
 
 ## Create a Rule Index
 A rule index contains all the rules and uses their ID as an index. You can
