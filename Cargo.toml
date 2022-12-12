@@ -14,3 +14,6 @@ serde_yaml = "0.9"
 serde_with = "2.0.1"
 walkdir = "2"
 log = "0.4"
+
+[dev-dependencies]
+test-case = "2.2.2"

@@ -117,8 +117,7 @@ pub fn find_files_simple(path: &str) -> Vec<String> {
 
 // read a file and return a String.
 pub fn read_file_to_string(file_path: &str) -> io::Result<String> {
-    let contents = fs::read_to_string(file_path)?;
-    Ok(contents)
+    fs::read_to_string(file_path)
 }
 
 // ----- END read_file_to_string
@@ -131,18 +130,15 @@ pub fn write_string_to_file(filename: &str, data: &str) -> io::Result<()> {
 }
 // ----- END write_string_to_file
 
-// pub fn convert_result<T>(result: io::Result<T>) -> serde_yaml::Result<T> {
-//     match result {
-//         Ok(value) => Ok(value),
-//         Err(error) => Err(serde_yaml::Error(error)),
-//     }
-// }
-
 // ----- START mod tests
 #[cfg(test)]
 mod tests {
 
-    const control_files: [&str; 9] = [
+    use crate::error::Result;
+    use crate::utils::*;
+    use test_case::test_case;
+
+    const CONTROL_FILES: [&str; 9] = [
         "tests/multiple-rules.yml",
         "tests/multiple-rules.yaml",
         "tests/rules/cpp/arrays-out-of-bounds-access.yaml",
@@ -157,10 +153,8 @@ mod tests {
     // test for find_files().
     #[test]
     fn test_find_files() {
-        let mut control = control_files.map(String::from).to_vec();
-
+        let mut control = CONTROL_FILES.map(String::from).to_vec();
         let mut results = find_files("tests", None, None);
-
         // sort the results before comparison because order of file read is not guaranteed.
         assert_eq!(results.sort(), control.sort());
     }
@@ -168,20 +162,8 @@ mod tests {
     // test for find_files() when `include` is provided.
     #[test]
     fn test_find_files_include() {
-        // let control_files: [&str; 8] = [
-        //     "tests/multiple-rules.yaml",
-        //     "tests/rules/cpp/arrays-out-of-bounds-access.yaml",
-        //     "tests/rules/cpp/arrays-passed-to-functions.yaml",
-        //     "tests/rules/cpp/encode-decode-function-name.yaml",
-        //     "tests/rules/cpp/encrypt-decrypt-function-name.yaml",
-        //     "tests/rules/cpp/memcpy-insecure-use.yaml",
-        //     "tests/rules/cpp/potentially-uninitialized-pointer.yaml",
-        //     "tests/rules/cpp/snprintf-insecure-use.yaml",
-        // ];
-        let mut control = control_files.map(String::from).to_vec();
-
+        let mut control = CONTROL_FILES.map(String::from).to_vec();
         let mut results = find_files("tests", Some(rule_extensions()), None);
-
         // sort the results before comparison because order of file read is not guaranteed.
         assert_eq!(results.sort(), control.sort());
     }
@@ -194,6 +176,23 @@ mod tests {
             content,
             "# this is not a rule and should not be found in tests"
         );
+    }
+
+    // test for check_path(). test_case doesn't allow function calls in patterns
+    #[test_case("tests/" => matches Ok(true))]
+    #[test_case("nem/" => matches Err(_))]
+    #[test_case("Cargo.toml" => matches Err(_))]
+    // #[test_case("Cargo.toml" => matches Err(Error::new("Cargo.toml is not a directory.".to_string())))]
+    fn test_check_path(path: &str) -> Result<bool> {
+        check_path(path)
+    }
+
+    #[test_case("tests/")]
+    #[test_case("nem/" => panics)]
+    #[test_case("Cargo.toml" => panics)]
+    // test for check_path_panic().
+    fn test_check_path_panic(path: &str) {
+        check_path_panic(path)
     }
 }
 

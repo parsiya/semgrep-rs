@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path, vec};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, Result};
+use crate::{utils::read_file_to_string, Error, Result};
 
 const RULE_SEPARATOR: &str = ".";
 
@@ -126,8 +126,57 @@ impl GenericRuleFile {
         serde_yaml::from_str::<GenericRuleFile>(&yaml).map_err(|e| Error::new(e.to_string()))
     }
 
+    // deserialize a file containing a YAML string into a GenericRuleFile.
+    pub fn from_file(file: &str) -> Result<GenericRuleFile> {
+        // read the file.
+        read_file_to_string(file)
+            .map_err(|e| Error::new(e.to_string()))
+            // deserialize the rule.
+            .and_then(|st| {
+                serde_yaml::from_str::<GenericRuleFile>(&st).map_err(|e| Error::new(e.to_string()))
+            })
+    }
+
     // serialize a GenericRuleFile to a YAML string.
     pub fn to_string(&self) -> Result<String> {
         serde_yaml::to_string(&self).map_err(|e| Error::new(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::utils;
+    use crate::GenericRule;
+    use crate::GenericRuleExt;
+    use crate::GenericRuleFile;
+    use test_case::test_case;
+
+    const CONTROL_FILES: [&str; 7] = [
+        "tests/rules/cpp/arrays-out-of-bounds-access.yaml",
+        "tests/rules/cpp/arrays-passed-to-functions.yaml",
+        "tests/rules/cpp/encode-decode-function-name.yaml",
+        "tests/rules/cpp/encrypt-decrypt-function-name.yaml",
+        "tests/rules/cpp/memcpy-insecure-use.yaml",
+        "tests/rules/cpp/potentially-uninitialized-pointer.yaml",
+        "tests/rules/cpp/snprintf-insecure-use.yaml",
+    ];
+
+    const RULE_IDS: [&str; 7] = [
+        "arrays-out-of-bounds-access",
+        "arrays-passed-to-functions",
+        "encode-decode-function-name",
+        "encrypt-decrypt-function-name",
+        "memcpy-insecure-use",
+        "potentially-uninitialized-pointer",
+        "snprintf-insecure-use",
+    ];
+
+    #[test]
+    fn test_get_id() {
+        for index in 0..CONTROL_FILES.len() {
+            let rule_file = GenericRuleFile::from_file(CONTROL_FILES[index]).unwrap();
+            let id = rule_file.rules[0].get_id().unwrap();
+            assert_eq!(id, RULE_IDS[index]);
+        }
     }
 }

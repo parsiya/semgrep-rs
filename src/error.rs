@@ -2,13 +2,6 @@ use std::fmt;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-// // create the enums.
-// #[derive(Debug)]
-// enum Error {
-//     Io(std::io::Error),
-//     Yaml(serde_yaml::Error),
-// }
-
 #[derive(Debug)]
 pub struct Error {
     message: String,
