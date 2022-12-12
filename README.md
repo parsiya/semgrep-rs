@@ -17,7 +17,7 @@ now:
 ### git Submodule
 
 1. Add it as a submodule to your repository.
-    1. `git clone https://github.com/parsiya/semgrep-rs src/semgrep-rs`
+    1. `git clone -b dev https://github.com/parsiya/semgrep-rs src/semgrep-rs`
 2. Add the following to your project's `Cargo.toml`.
     ```ini
     [dependencies]
