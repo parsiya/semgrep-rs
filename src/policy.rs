@@ -69,13 +69,18 @@ impl Policy {
     // populate the policy from the rules index and store it in content.
     pub fn populate(&mut self, ri: &GenericRuleIndex) {
         let rf = ri.create_policy(&self.rules).to_string();
-        // ZZZ this will panic, instead write an error and continue?
+        // TODO: this will panic, instead write an error and continue?
         self.content = rf.unwrap()
     }
 
     // returns the policy content that can be passed to Semgrep.
     pub fn get_content(&self) -> String {
         self.content.clone()
+    }
+
+    // returns the policy name.
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -113,7 +118,7 @@ impl PolicyIndex {
         exclude: Option<Vec<&str>>,
         ri: &GenericRuleIndex,
     ) -> PolicyIndex {
-        // ZZZ we want to panic if this doesn't work so the server can shut down
+        // TODO we want to panic if this doesn't work so the server can shut down
         // and the user can fix it. Do we? This is a library? Might want to
         // either log or return an error instead.
         let mut pi = PolicyIndex::new();

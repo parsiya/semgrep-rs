@@ -1,0 +1,4 @@
+name: policy2
+rules:
+- snprintf-insecure-use
+- memcpy-insecure-use

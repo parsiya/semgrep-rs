@@ -44,11 +44,12 @@ impl GenericRuleIndex {
     ) -> GenericRuleIndex {
         let mut gri = GenericRuleIndex::new(complete);
 
-        // ZZZ add error handling?
+        // TODO: add error handling?
         // we will panic here if there are errors but I don't think we care, we
         // want to know if our rule index was not created successfully so the
         // server can shut down and the user can fix the error.
         gri.index = create_generic_rule_index(&path, include, exclude, complete).unwrap();
+        gri.complete = complete;
         gri
     }
 
@@ -62,7 +63,7 @@ impl GenericRuleIndex {
         // }
 
         // ChatGPT rewrite with combinators.
-        // What happens if the rule is not in the index?.
+        // What happens if the rule is not in the index? An error.
         let rules: Vec<GenericRule> = rule_ids
             .iter()
             .filter_map(|id| self.index.get(id))
