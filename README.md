@@ -48,7 +48,7 @@ for rule in &rule_file2.rules {
     print!("{}", rule.get_id().unwrap());
 }
 
-// you can serialize a rule file back to YAML.
+// you can serialize them back to YAML.
 let yaml_string: String = rule_file.to_string().unwrap();
 
 // generally rule files only have one rule in them, if you have a GenericRuleFile
@@ -83,19 +83,20 @@ overwrite them. See below for a solution.
 
 ```rust
 // create a simple rule index.
-let simple_gri: GenericRuleIndex = GenericRuleIndex::from_path_simple("tests/rules");
+let simple_gri: GenericRuleIndex =
+    GenericRuleIndex::from_path_simple("tests/rules").unwrap();
 // get all rules IDs in the index.
 let ids: Vec<String> = simple_gri.get_ids();
 ```
 
-The simple methods only indexes files with `.yaml` and `.yml` extensions and
+The `_simple` methods only index files with `.yaml` and `.yml` extensions and
 ignores rule test files ending in `.test.yaml`, `.test.yml` and
-`.test.fixed.yaml`.
+`.test.fixed.yaml`. 
 
 You can use your own `Option<Vec<&str>>` for include and exclude.
 
 ```rust
-// no need to include the dot.
+// don't include the dot for the include vector.
 let include = vec!["ext1", "ext2"];
 // for exclude, you need to specify how the file ends.
 // including the dot here helps prevent skipping files like "overflow-test.yml".
@@ -106,16 +107,17 @@ let custom_gri = GenericRuleIndex::from_path(
     Option<include>,
     Option<exclude>,
     false,
-);
+).unwrap();
 ```
 
-A rule index by itself is not that useful. You can just grab and serve rules by
-ID.
+### Note About Errors
+If a file is not accessible or it cannot be deserialized into a struct, the
+crate logs the it with `error!` and continues.
 
 ### Complete Rule IDs
-By default, both Semgrep and the portal use complete rule IDs to avoid collisions.
-A complete rule ID contains the complete path of the rule in addition to the ID
-in the file.
+By default, both Semgrep and the portal use complete rule IDs to avoid
+collisions. A complete rule ID contains the complete path of the rule in
+addition to the ID in the file.
 
 For example, the normal ID of the rule in
 `tests/rules/cpp/arrays-out-of-bounds-access.yaml` is
@@ -123,8 +125,9 @@ For example, the normal ID of the rule in
 `tests.rules.cpp.arrays-out-of-bounds-access.arrays-out-of-bounds-access`.
 
 Using complete rule IDs is a hassle when we create policies by hand (see
-policies below). So you can specify if you want simple or complete rule IDs. If
-you don't, you need to make sure you do not have rule ID collisions.
+policies below). So you can specify if you want simple or complete rule IDs.
+
+**In both cases you have to make sure you don't have rule ID collisions.**
 
 ```rust
 let custom_gri = GenericRuleIndex::from_path(
@@ -132,13 +135,14 @@ let custom_gri = GenericRuleIndex::from_path(
     include,
     exclude,
     true,   // create complete rule IDs.
-);
+).unwrap();
 ```
 
-## Serialize and Deserialize Policies
-A policy is a collection of one or multiple rules. This is not a Semgrep
-construct and you cannot pass it to the CLI. I am trying to imitate the Semgrep
-portal . You can define a policy by creating a YAML file.
+## Policies
+A rule index by itself is not that useful. A policy is a collection of one or
+multiple rules. This is not a Semgrep construct and you cannot pass it to the
+CLI. The crate is trying to imitate the Semgrep portal. You can define a policy
+by creating a YAML file.
 
 ```yaml
 name: policy1 # this should be unique
@@ -149,11 +153,12 @@ rules:
 ```
 
 Rules in a policy are defined by rule ID. If you have created your rule index
-with complete IDs then you should use the same version here.
+with complete IDs then you should use the same version here. E.g.,
+`path.to.file.id`.
 
 ### Serialize and Deserialize Policies
 Similar to rules you can create a `Policy` object from a YAML string and
-serialize it back to YAML.
+serialize it back to YAML, again.
 
 ```rust
 // read a policy from a file.
@@ -162,16 +167,16 @@ let policy1: Policy = Policy::from_file("tests/policies/policy1.yaml").unwrap();
 let content: String = utils::read_file_to_string("tests/policies/policy2.yaml").unwrap();
 let policy2: Policy = Policy::from_string(content).unwrap();
 
-// serialzie it to a YAML string (note this doesn't create a rule file).
+// serialize it to a YAML string (note this doesn't create a rule file).
 let policy1_string: String = policy1.to_yaml().unwrap();
 
 // write it to a file (note this doesn't create a rule file).
 let res = policy2.to_file("tests/policies/policy2-copy.yaml");
 ```
 
-As we saw above, we can create the same YAML file with rule names. This is
-useless because we want to pass policies as a collection of rules to Semgrep
-CLI. This is when the `GenericRuleIndex` created before comes into play. We can
+As we saw above, we can create the same YAML file with rule names. This cannot
+be passed to the Semgrep CLI because we want to pass policies as a collection of
+rules. The `GenericRuleIndex` that we created before comes into play. We can
 `populate` a policy by using the index.
 
 ```rust
@@ -198,7 +203,7 @@ does not check for collisions. If there's a need to implement complete IDs
 ```rust
 // create a policy index from all rules in a path. This will panic on YAML
 // de/serialization errors and if there are no valid policies in the path.
-let simple_pi: PolicyIndex = PolicyIndex::from_path_simple("tests/policies");
+let simple_pi: PolicyIndex = PolicyIndex::from_path_simple("tests/policies").unwrap();
 
 // get a policy by ID.
 let pol: Policy = simple_pi.get_policy("policy1").unwrap();
@@ -224,11 +229,23 @@ let custom_pi: PolicyIndex::from_path(
     "tests/policies",
     Option<include>,
     Option<exclude>,
-);
+).unwrap();
 ```
 
-The policy index is very useful if you want to create your own server and serve
+The policy index is useful if you want to create your own server and serve
 policies to Semgrep.
+
+### The Special "all" Policy
+The crate automatically creates an special policy named `all`. This policy
+contains every rule in the rule index. If you have a policy named `all`, it will
+be overwritten by this. The `all` policy is useful when you want to throw the
+kitchen sink at the code.
+
+```rust
+let all_policy: Policy = custom_pi.get_policy("all").unwrap();
+// get the rule file with every rule!
+let all_rules: String = all_policy.get_content();
+```
 
 # License
 Rust likes dual-licensing like this so here we go.

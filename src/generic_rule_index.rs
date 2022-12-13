@@ -17,22 +17,22 @@ pub struct GenericRuleIndex {
 
 impl GenericRuleIndex {
     fn new(complete: bool) -> GenericRuleIndex {
-        let index: HashMap<String, GenericRule> = HashMap::new();
-        let gri: GenericRuleIndex = GenericRuleIndex { index, complete };
-        gri
+        GenericRuleIndex {
+            index: HashMap::new(),
+            complete,
+        }
     }
 
     pub fn get_index(&self) -> &HashMap<String, GenericRule> {
-        return &self.index;
+        &self.index
     }
 
     pub fn get_ids(&self) -> Vec<String> {
-        let out: Vec<String> = self.index.keys().map(|k| k.to_string()).collect();
-        out
+        self.index.keys().map(|k| k.to_string()).collect()
     }
 
-    pub fn from_path_simple(path: &str) -> GenericRuleIndex {
-        return GenericRuleIndex::from_path(path, None, None, false);
+    pub fn from_path_simple(path: &str) -> Result<GenericRuleIndex> {
+        GenericRuleIndex::from_path(path, None, None, false)
     }
 
     // create and return a new GenericRuleIndex.
@@ -41,16 +41,21 @@ impl GenericRuleIndex {
         include: Option<Vec<&str>>,
         exclude: Option<Vec<&str>>,
         complete: bool,
-    ) -> GenericRuleIndex {
-        let mut gri = GenericRuleIndex::new(complete);
+    ) -> Result<GenericRuleIndex> {
+        // let mut gri = GenericRuleIndex::new(complete);
+        // match create_generic_rule_index(&path, include, exclude, complete) {
+        //     Ok(index) => gri.index = index,
+        //     Err(e) => return Error::wrap_string(e.to_string()),
+        // };
+        // Ok(gri)
 
-        // TODO: add error handling?
-        // we will panic here if there are errors but I don't think we care, we
-        // want to know if our rule index was not created successfully so the
-        // server can shut down and the user can fix the error.
-        gri.index = create_generic_rule_index(&path, include, exclude, complete).unwrap();
-        gri.complete = complete;
-        gri
+        create_generic_rule_index(&path, include, exclude, complete)
+            .map(|index| {
+                let mut gri = GenericRuleIndex::new(complete);
+                gri.index = index;
+                gri
+            })
+            .map_err(|e| Error::new(e.to_string()))
     }
 
     // creates a RuleFile (that represents a Policy) with the provided rule IDs.
@@ -77,6 +82,14 @@ impl GenericRuleIndex {
     pub fn get_rule(&self, rule_id: &str) -> Option<GenericRule> {
         self.index.get(rule_id).cloned()
     }
+
+    // TODO: Remove if not needed.
+    // combine all the rules in the index into one file and return.
+    pub fn get_all(&self) -> GenericRuleFile {
+        // instead of iterating and adding all rules, we use create_policy with
+        // all rule IDs in the index.
+        self.create_policy(&self.get_ids())
+    }
 }
 
 // ----- END GenericRuleIndex
@@ -92,14 +105,14 @@ impl GenericRuleIndex {
 // much dependent on the path of the registry passed to the server.
 //
 // If `complete` is false, just the rule ID from the file will be used.
-pub(crate) fn create_generic_rule_index(
+fn create_generic_rule_index(
     path: &str,
     include: Option<Vec<&str>>,
     exclude: Option<Vec<&str>>,
     complete: bool,
 ) -> Result<HashMap<String, GenericRule>> {
     // check the path.
-    // ZZZ is this needed? Supposedly we will check the path before calling this function.
+    // TODO is this needed? Supposedly we will check the path before calling this function.
     // utils::check_path(&path)?;
 
     let rule_paths: Vec<String> = find_files(path, include, exclude);
@@ -110,7 +123,7 @@ pub(crate) fn create_generic_rule_index(
         let content = match read_file_to_string(&rule_file_path) {
             Ok(cn) => cn,
             Err(e) => {
-                // ZZZ need error logging
+                // TODO: need better error logging
                 error!("Error reading file: {}", e.to_string());
                 continue;
             }
@@ -120,7 +133,7 @@ pub(crate) fn create_generic_rule_index(
         let rule_file = match GenericRuleFile::from_yaml(content) {
             Ok(rf) => rf,
             Err(e) => {
-                // ZZZ need error logging
+                // TODO: need better error logging
                 error!("Error deserializing file: {}", e.to_string());
                 continue;
             }
@@ -137,6 +150,5 @@ pub(crate) fn create_generic_rule_index(
     if rule_index.keys().len() == 0 {
         return Error::wrap_str("Rule index is empty.");
     }
-
     Ok(rule_index)
 }

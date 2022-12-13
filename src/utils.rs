@@ -98,17 +98,17 @@ pub fn find_files(
 
 // rule_extensions returns the default file extensions for Semgrep rules.
 fn rule_extensions() -> Vec<&'static str> {
-    return vec!["yml", "yaml"];
+    vec!["yml", "yaml"]
 }
 
 // test_extensions returns the default file extensions for Semgrep rule tests.
 fn test_extensions() -> Vec<&'static str> {
-    return vec!["test.yml", "test.yaml", "test.fixed.yaml"];
+    vec!["test.yml", "test.yaml", "test.fixed.yaml"]
 }
 
 // simple version of find_files with default values.
 pub fn find_files_simple(path: &str) -> Vec<String> {
-    return find_files(path, None, None);
+    find_files(path, None, None)
 }
 
 // ----- END find_rules

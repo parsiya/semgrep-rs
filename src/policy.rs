@@ -67,10 +67,21 @@ impl Policy {
     }
 
     // populate the policy from the rules index and store it in content.
-    pub fn populate(&mut self, ri: &GenericRuleIndex) {
-        let rf = ri.create_policy(&self.rules).to_string();
-        // TODO: this will panic, instead write an error and continue?
-        self.content = rf.unwrap()
+    pub fn populate(&mut self, ri: &GenericRuleIndex) -> Result<()> {
+        // match ri.create_policy(&self.rules).to_string() {
+        //     Ok(str) => {
+        //         self.content = str;
+        //         Ok(())
+        //     }
+        //     Err(e) => Error::wrap_string(e.to_string()),
+        // }
+
+        ri.create_policy(&self.rules)
+            .to_string()
+            // if successful, store it in self.content.
+            .map(|str| self.content = str)
+            // otherwise, return any errors.
+            .map_err(|e| Error::new(e.to_string()))
     }
 
     // returns the policy content that can be passed to Semgrep.
@@ -89,13 +100,15 @@ impl Policy {
 // an index of policies, key: policy name, value: the Policy obj.
 pub struct PolicyIndex {
     index: HashMap<String, Policy>,
+    keys: Vec<String>,
 }
 
 impl PolicyIndex {
     // create a new PolicyIndex.
     fn new() -> PolicyIndex {
         let index: HashMap<String, Policy> = HashMap::new();
-        PolicyIndex { index }
+        let keys: Vec<String> = Vec::new();
+        PolicyIndex { index, keys }
     }
 
     // return a policy from the index.
@@ -105,7 +118,12 @@ impl PolicyIndex {
 
     // return all policies in the index.
     pub fn get_index(&self) -> HashMap<String, Policy> {
-        return self.index.clone();
+        self.index.clone()
+    }
+
+    // return all the policy IDs in the index.
+    pub fn get_ids(&self) -> Vec<String> {
+        self.keys.clone()
     }
 
     // return a new PolicyIndex populated with policies in the path.
@@ -117,18 +135,31 @@ impl PolicyIndex {
         include: Option<Vec<&str>>,
         exclude: Option<Vec<&str>>,
         ri: &GenericRuleIndex,
-    ) -> PolicyIndex {
-        // TODO we want to panic if this doesn't work so the server can shut down
-        // and the user can fix it. Do we? This is a library? Might want to
-        // either log or return an error instead.
+    ) -> Result<PolicyIndex> {
         let mut pi = PolicyIndex::new();
-        pi.index = create_policy_index(path, include, exclude, ri).unwrap();
-        pi
+
+        match create_policy_index(path, include, exclude, ri) {
+            Ok(index) => pi.index = index,
+            Err(e) => return Error::wrap_string(e.to_string()),
+        };
+        // these can be moved into the Ok() arm of the match, too.
+
+        // create the `all` policy that contains all the rules.
+        // TODO: add this to the readme mentioning we should not have a
+        // rule ID or policy named `all`.
+        // TODO: add to readme about the built-in policy named all that can be
+        // called by /r/all or /p/all.
+        let mut all_policy = Policy::new("all".to_string(), ri.get_ids());
+        // populate the `all` policy.
+        all_policy.populate(ri)?;
+        pi.index.insert("all".to_string(), all_policy);
+        pi.keys = pi.index.keys().map(|k| k.to_string()).collect();
+        Ok(pi)
     }
 
     // same as from_path but use the default policy file extensions.
-    pub fn from_path_simple(path: &str, ri: &GenericRuleIndex) -> PolicyIndex {
-        return PolicyIndex::from_path(path, None, None, ri);
+    pub fn from_path_simple(path: &str, ri: &GenericRuleIndex) -> Result<PolicyIndex> {
+        PolicyIndex::from_path(path, None, None, ri)
     }
 }
 
@@ -163,7 +194,7 @@ fn create_policy_index(
         };
 
         // populate the Policy.
-        policy_object.populate(ri);
+        policy_object.populate(ri)?;
 
         // add it to the main index.
         policy_index.insert(policy_object.name.clone(), policy_object);
