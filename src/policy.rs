@@ -100,15 +100,14 @@ impl Policy {
 // an index of policies, key: policy name, value: the Policy obj.
 pub struct PolicyIndex {
     index: HashMap<String, Policy>,
-    keys: Vec<String>,
+    // keys: Vec<String>,
 }
 
 impl PolicyIndex {
     // create a new PolicyIndex.
     fn new() -> PolicyIndex {
         let index: HashMap<String, Policy> = HashMap::new();
-        let keys: Vec<String> = Vec::new();
-        PolicyIndex { index, keys }
+        PolicyIndex { index }
     }
 
     // return a policy from the index.
@@ -123,7 +122,12 @@ impl PolicyIndex {
 
     // return all the policy IDs in the index.
     pub fn get_ids(&self) -> Vec<String> {
-        self.keys.clone()
+        self.index.keys().map(|k| k.to_string()).collect()
+    }
+
+    // return the number of policies in the index.
+    pub fn len(&self) -> usize {
+        self.index.keys().len()
     }
 
     // return a new PolicyIndex populated with policies in the path.
@@ -144,22 +148,29 @@ impl PolicyIndex {
         };
         // these can be moved into the Ok() arm of the match, too.
 
-        // create the `all` policy that contains all the rules.
         // TODO: add this to the readme mentioning we should not have a
         // rule ID or policy named `all`.
         // TODO: add to readme about the built-in policy named all that can be
         // called by /r/all or /p/all.
-        let mut all_policy = Policy::new("all".to_string(), ri.get_ids());
-        // populate the `all` policy.
-        all_policy.populate(ri)?;
+        // create the "all" policy that contains all the rules.
+        let all_policy = create_all_policy(ri)?;
+        // add it to the index.
         pi.index.insert("all".to_string(), all_policy);
-        pi.keys = pi.index.keys().map(|k| k.to_string()).collect();
         Ok(pi)
     }
 
-    // same as from_path but use the default policy file extensions.
+    // same as from_path but uses the default policy file extensions.
     pub fn from_path_simple(path: &str, ri: &GenericRuleIndex) -> Result<PolicyIndex> {
         PolicyIndex::from_path(path, None, None, ri)
+    }
+
+    // creates a policy index that only contains the p/all policy.
+    pub fn empty(ri: &GenericRuleIndex) -> Result<PolicyIndex> {
+        let mut pi = PolicyIndex::new();
+        let all_policy = create_all_policy(ri)?;
+        // add it to the index.
+        pi.index.insert("all".to_string(), all_policy);
+        Ok(pi)
     }
 }
 
@@ -204,4 +215,12 @@ fn create_policy_index(
         return Error::wrap_str("Policy index is empty.");
     }
     Ok(policy_index)
+}
+
+// creates a policy named `all` from all the rules in the index.
+fn create_all_policy(ri: &GenericRuleIndex) -> Result<Policy> {
+    let mut all_policy = Policy::new("all".to_string(), ri.get_ids());
+    // populate the `all` policy.
+    all_policy.populate(ri)?;
+    Ok(all_policy)
 }

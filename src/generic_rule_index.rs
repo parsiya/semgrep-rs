@@ -31,6 +31,10 @@ impl GenericRuleIndex {
         self.index.keys().map(|k| k.to_string()).collect()
     }
 
+    pub fn len(&self) -> usize {
+        self.get_ids().len()
+    }
+
     pub fn from_path_simple(path: &str) -> Result<GenericRuleIndex> {
         GenericRuleIndex::from_path(path, None, None, false)
     }
