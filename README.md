@@ -18,7 +18,7 @@ now:
 ### git Submodule
 
 1. Add it as a submodule to your repository.
-    1. `git clone -b dev https://github.com/parsiya/semgrep-rs src/semgrep-rs`
+    1. `git submodule add -b dev https://github.com/parsiya/semgrep-rs src/semgrep-rs`
 2. Add the following to your project's `Cargo.toml`.
     ```ini
     [dependencies]
@@ -51,9 +51,9 @@ for rule in &rule_file2.rules {
 // you can serialize them back to YAML.
 let yaml_string: String = rule_file.to_string().unwrap();
 
-// generally rule files only have one rule in them, if you have a GenericRuleFile
+// usually rule files only have one rule in them, if you have a GenericRuleFile
 // with multiple rules, you can create separate rule files that only have a
-// single rule.
+// single rule with .split().
 let rules: Vec<GenericRuleFile> = rule_file2.split();
 for rule in &rules {
     let mut path = "tests/".to_string();
