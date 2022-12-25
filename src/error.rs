@@ -14,9 +14,6 @@ impl Error {
         Error { message }
     }
 
-    // as I am usign map_err, are these even used?
-    // TODO: Remove if not used by the end of the first prototype.
-
     // create a new custom error with just a string and no formatting.
     pub fn wrap_string<T>(msg: String) -> std::result::Result<T, Error> {
         Err(Error::new(msg))
@@ -38,17 +35,3 @@ impl std::error::Error for Error {
         &self.message
     }
 }
-
-// implement traits to convert from each to our error type.
-
-// impl From<std::io::Error> for Error {
-//     fn From(err: std::io::Error) -> self {
-//         Error::Io(err)
-//     }
-// }
-
-// impl From<serde_yaml::Error> for Error {
-//     fn From(err: serde_yaml::Error) -> self {
-//         Error::Yaml(err)
-//     }
-// }

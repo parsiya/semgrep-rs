@@ -148,10 +148,6 @@ impl PolicyIndex {
         };
         // these can be moved into the Ok() arm of the match, too.
 
-        // TODO: add this to the readme mentioning we should not have a
-        // rule ID or policy named `all`.
-        // TODO: add to readme about the built-in policy named all that can be
-        // called by /r/all or /p/all.
         // create the "all" policy that contains all the rules.
         let all_policy = create_all_policy(ri)?;
         // add it to the index.

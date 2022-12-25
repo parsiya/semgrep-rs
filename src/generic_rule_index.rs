@@ -87,7 +87,6 @@ impl GenericRuleIndex {
         self.index.get(rule_id).cloned()
     }
 
-    // TODO: Remove if not needed.
     // combine all the rules in the index into one file and return.
     pub fn get_all(&self) -> GenericRuleFile {
         // instead of iterating and adding all rules, we use create_policy with
@@ -101,24 +100,20 @@ impl GenericRuleIndex {
 // return an index of rules where the key is the rule ID and the value is the
 // rule.
 //
-// If `complete` it true, this function uses the same ID that Semgrep uses which
+// If `complete` is true, this function uses the same ID that Semgrep uses which
 // contains the path followed by the rule ID in the file. E.g., if the
 // /rules/cpp/security/buffer-overflow.cpp file contains the rule with ID
 // buffer-overflow, the complete ruleID will be
 // rules.cpp/security.buffer-overflow.buffer-overflow. Hence, rule ID is very
 // much dependent on the path of the registry passed to the server.
 //
-// If `complete` is false, just the rule ID from the file will be used.
+// If `complete` is false, it will just use the rule ID from the file.
 fn create_generic_rule_index(
     path: &str,
     include: Option<Vec<&str>>,
     exclude: Option<Vec<&str>>,
     complete: bool,
 ) -> Result<HashMap<String, GenericRule>> {
-    // check the path.
-    // TODO is this needed? Supposedly we will check the path before calling this function.
-    // utils::check_path(&path)?;
-
     let rule_paths: Vec<String> = find_files(path, include, exclude);
 
     let mut rule_index: HashMap<String, GenericRule> = HashMap::new();

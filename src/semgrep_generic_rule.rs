@@ -19,9 +19,6 @@ pub trait GenericRuleExt {
 
 impl GenericRuleExt for GenericRule {
     fn get_id(&self) -> Result<&str> {
-        // original
-        // return self.get("id").unwrap().as_str().unwrap();
-
         // trying error handling
         // let i1 = self.get("id");
         // let i2 = match i1 {
