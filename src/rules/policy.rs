@@ -1,8 +1,8 @@
 // ----- START Policy
 
+use super::generic_rule_index::GenericRuleIndex;
 use crate::error::{Error, Result};
 use crate::utils::{find_files, read_file_to_string, write_string_to_file};
-use crate::GenericRuleIndex;
 
 use log::error;
 use serde::{Deserialize, Serialize};

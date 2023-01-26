@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
+use super::semgrep_generic_rule::{GenericRule, GenericRuleFile};
 use crate::error::{Error, Result};
-use crate::semgrep_generic_rule::GenericRuleFile;
 use crate::utils::{find_files, read_file_to_string};
-use crate::GenericRule;
 
 use log::error;
 

@@ -1,8 +1,9 @@
 # semgrep-rs
 Rust library crate to interact with [Semgrep][semgrep]. Currently, it only
-supports parsing and combining Semgrep rules and a new imitating rulesets.
+supports parsing and combining Semgrep rules and a new construct that imitates
+rulesets.
 
-I have created a [Personal Semgrep Server][server] using this crate.
+I have used it in my [Personal Semgrep Server][server] project.
 
 [semgrep]: https://semgrep.dev
 [server]: https://github.com/parsiya/personal-semgrep-server/tree/dev

@@ -145,11 +145,8 @@ impl GenericRuleFile {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils;
-    use crate::GenericRule;
     use crate::GenericRuleExt;
     use crate::GenericRuleFile;
-    use test_case::test_case;
 
     const CONTROL_FILES: [&str; 7] = [
         "tests/rules/cpp/arrays-out-of-bounds-access.yaml",
