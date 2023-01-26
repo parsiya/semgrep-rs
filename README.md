@@ -1,6 +1,11 @@
 # semgrep-rs
-Rust library crate to parse and interact with Semgrep. Currently, it only
-supports interacting with Semgrep rules.
+Rust library crate to interact with [Semgrep][semgrep]. Currently, it only
+supports parsing and combining Semgrep rules and a new imitating rulesets.
+
+I have created a [Personal Semgrep Server][server] using this crate.
+
+[semgrep]: https://semgrep.dev
+[server]: https://github.com/parsiya/personal-semgrep-server/tree/dev
 
 ## Future Plans:
 
@@ -52,7 +57,7 @@ for rule in &rule_file2.rules {
 let yaml_string: String = rule_file.to_string().unwrap();
 
 // usually rule files only have one rule in them, if you have a GenericRuleFile
-// with multiple rules, you can create rule files with only one rule  per file
+// with multiple rules, you can create rule files with only one rule per file
 // with .split().
 let rules: Vec<GenericRuleFile> = rule_file2.split();
 for rule in &rules {
@@ -141,8 +146,8 @@ let custom_gri = GenericRuleIndex::from_path(
 ## Policies
 A rule index by itself is not that useful. A policy is a collection of one or
 multiple rules. This is not a Semgrep construct and you cannot pass it to the
-CLI. The crate is trying to imitate the Semgrep portal. You can define a policy
-by creating a YAML file.
+CLI. The crate is trying to imitate rulesets in the Semgrep portal. You can
+define a policy by creating a YAML file.
 
 ```yaml
 name: policy1 # this should be unique
@@ -238,8 +243,8 @@ policies to Semgrep.
 ### The Special "all" Policy
 The crate automatically creates an special policy named `all`. This policy
 contains every rule in the rule index. If you have a policy named `all`, it will
-be overwritten by this. The `all` policy is useful when you want to throw the
-kitchen sink at the code.
+be overwritten by this policy. The `all` policy is useful when you want to throw
+every rule at the code.
 
 ```rust
 let all_policy: Policy = custom_pi.get_policy("all").unwrap();
