@@ -52,8 +52,8 @@ for rule in &rule_file2.rules {
 let yaml_string: String = rule_file.to_string().unwrap();
 
 // usually rule files only have one rule in them, if you have a GenericRuleFile
-// with multiple rules, you can create separate rule files that only have a
-// single rule with .split().
+// with multiple rules, you can create rule files with only one rule  per file
+// with .split().
 let rules: Vec<GenericRuleFile> = rule_file2.split();
 for rule in &rules {
     let mut path = "tests/".to_string();
@@ -112,7 +112,7 @@ let custom_gri = GenericRuleIndex::from_path(
 
 ### Note About Errors
 If a file is not accessible or it cannot be deserialized into a struct, the
-crate logs the it with `error!` and continues.
+crate logs it with `error!` and continues.
 
 ### Complete Rule IDs
 By default, both Semgrep and the portal use complete rule IDs to avoid
