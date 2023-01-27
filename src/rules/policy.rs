@@ -28,7 +28,7 @@ impl Policy {
     }
 
     // create a new Policy from a YAML string.
-    pub fn from_yaml(yaml: String) -> Result<Policy> {
+    pub fn from_yaml(yaml: &str) -> Result<Policy> {
         serde_yaml::from_str::<Policy>(&yaml).map_err(|e| Error::new(e.to_string()))
     }
 
@@ -44,9 +44,7 @@ impl Policy {
 
         read_file_to_string(file)
             .map_err(|e| Error::new(e.to_string()))
-            .and_then(|str| {
-                serde_yaml::from_str::<Policy>(&str).map_err(|e| Error::new(e.to_string()))
-            })
+            .and_then(|str| Policy::from_yaml(&str))
     }
 
     // serialize the Policy as a YAML string.
@@ -196,7 +194,7 @@ fn create_policy_index(
         };
 
         // create a Policy object from the string.
-        let mut policy_object = match Policy::from_yaml(policy_text) {
+        let mut policy_object = match Policy::from_yaml(&policy_text) {
             Ok(rf) => rf,
             Err(e) => {
                 error!("Error deserializing file: {}", e.to_string());
