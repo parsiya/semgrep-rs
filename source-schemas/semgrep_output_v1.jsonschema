@@ -1,0 +1,720 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "cli_output", // struct CliOutput
+  "description": "Translated by atdcat from 'semgrep_output_v1.atd'.",
+  "type": "object",
+  "required": [ "errors", "results", "paths" ],
+  "properties": {
+    "version": { "$ref": "#/definitions/version" }, // String
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/cli_error" }
+    },
+    "results": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/cli_match" }
+    },
+    "paths": { "$ref": "#/definitions/cli_paths" },
+    "time": { "$ref": "#/definitions/cli_timing" },
+    "explanations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/matching_explanation" }
+    }
+  },
+  "definitions": {
+    "raw_json": {},
+    "version": { "type": "string" },
+    "position": { // struct Position
+      "type": "object",
+      "required": [ "line", "col", "offset" ],
+      "properties": {
+        "line": { "type": "integer" },
+        "col": { "type": "integer" },
+        "offset": { "type": "integer" }
+      }
+    },
+    "location": { // struct Location
+      "type": "object",
+      "required": [ "path", "start", "end" ],
+      "properties": {
+        "path": { "type": "string" },
+        "start": { "$ref": "#/definitions/position" },
+        "end": { "$ref": "#/definitions/position" }
+      }
+    },
+    "rule_id": { "type": "string" },  // Just a String
+    "engine_kind": {  // enum EngineKind
+      "oneOf": [ { "const": "OSSMatch" }, { "const": "ProMatch" } ]
+    },
+    "core_match": { // struct CoreMatch
+      "type": "object",
+      "required": [ "rule_id", "location", "extra" ],
+      "properties": {
+        "rule_id": { "$ref": "#/definitions/rule_id" }, // String
+        "location": { "$ref": "#/definitions/location" },
+        "extra": { "$ref": "#/definitions/core_match_extra" }
+      }
+    },
+    "core_match_extra": { // struct CoreMatchExtra
+      "type": "object",
+      "required": [ "metavars", "engine_kind" ],
+      "properties": {
+        "message": { "type": "string" },
+        "metavars": { "$ref": "#/definitions/metavars" },
+        "dataflow_trace": {
+          "$ref": "#/definitions/core_match_dataflow_trace"
+        },
+        "rendered_fix": { "type": "string" },
+        "engine_kind": { "$ref": "#/definitions/engine_kind" }
+      }
+    },
+    "core_match_call_trace": { // skipped
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            { "const": "CoreLoc" },
+            { "$ref": "#/definitions/location" }
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            { "const": "CoreCall" },
+            {
+              "type": "array",
+              "minItems": 3,
+              "items": false,
+              "prefixItems": [
+                { "$ref": "#/definitions/location" },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/core_match_intermediate_var"
+                  }
+                },
+                { "$ref": "#/definitions/core_match_call_trace" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "core_match_dataflow_trace": {  // struct CoreMatchDataflowTrace
+      "type": "object",
+      "required": [],
+      "properties": {
+        "taint_source": { "$ref": "#/definitions/core_match_call_trace" },
+        "intermediate_vars": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/core_match_intermediate_var" }
+        },
+        "taint_sink": { "$ref": "#/definitions/core_match_call_trace" }
+      }
+    },
+    "core_match_intermediate_var": {  // struct CoreMatchIntermediateVar
+      "type": "object",
+      "required": [ "location" ],
+      "properties": { "location": { "$ref": "#/definitions/location" } }
+    },
+    "metavars": { // struct Metavars
+      "type": "object",
+      // #[serde(rename = "additionalProperties")]
+      "additionalProperties": { "$ref": "#/definitions/metavar_value" }
+    },
+    "metavar_value": {  // struct MetavarValue
+      "type": "object",
+      "required": [ "start", "end", "abstract_content" ],
+      "properties": {
+        "start": { "$ref": "#/definitions/position" },
+        "end": { "$ref": "#/definitions/position" },
+        "abstract_content": { "type": "string" },
+        "propagated_value": { "$ref": "#/definitions/svalue_value" }
+      }
+    },
+    "svalue_value": { // struct SValueValue
+      "type": "object",
+      "required": [ "svalue_abstract_content" ],
+      "properties": {
+        "svalue_start": { "$ref": "#/definitions/position" },
+        "svalue_end": { "$ref": "#/definitions/position" },
+        "svalue_abstract_content": { "type": "string" }
+      }
+    },
+    "core_error": { // struct CoreError
+      "type": "object",
+      "required": [ "error_type", "severity", "location", "message" ],
+      "properties": {
+        "rule_id": { "$ref": "#/definitions/rule_id" },
+        "error_type": { "$ref": "#/definitions/core_error_kind" },
+        "severity": { "$ref": "#/definitions/core_severity" },
+        "location": { "$ref": "#/definitions/location" },
+        "message": { "type": "string" },
+        "details": { "type": "string" }
+      }
+    },
+    "core_error_kind": {  // skipping this, it's serde_json::Value for now
+      "oneOf": [
+        { "const": "Lexical error" },
+        { "const": "Syntax error" },
+        { "const": "Other syntax error" },
+        { "const": "AST builder error" },
+        { "const": "Rule parse error" },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            { "const": "Pattern parse error" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        { "const": "Invalid YAML" },
+        { "const": "Internal matching error" },
+        { "const": "Semgrep match found" },
+        { "const": "Too many matches" },
+        { "const": "Fatal error" },
+        { "const": "Timeout" },
+        { "const": "Out of memory" },
+        { "const": "Timeout during interfile analysis" },
+        { "const": "OOM during interfile analysis" },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            { "const": "PartialParsing" },
+            {
+              "type": "array",
+              "items": { "$ref": "#/definitions/location" }
+            }
+          ]
+        }
+      ]
+    },
+    "core_severity": {  // enum CoreSeverity
+      "oneOf": [ { "const": "error" }, { "const": "warning" } ]
+    },
+    "core_stats": { // struct CoreStats
+      "type": "object",
+      "required": [ "okfiles", "errorfiles" ],
+      "properties": {
+        "okfiles": { "type": "integer" },
+        "errorfiles": { "type": "integer" }
+      }
+    },
+    "skipped_target": { // struct SkippedTarget
+      "type": "object",
+      "required": [ "path", "reason", "details" ],
+      "properties": {
+        "path": { "type": "string" },
+        "reason": { "$ref": "#/definitions/skip_reason" },
+        "details": { "type": "string" },
+        "rule_id": { "$ref": "#/definitions/rule_id" }  // String
+      }
+    },
+    "skip_reason": {  // enum SkipReason
+      "oneOf": [
+        { "const": "excluded_by_config" },
+        { "const": "wrong_language" },
+        { "const": "too_big" },
+        { "const": "minified" },
+        { "const": "binary" },
+        { "const": "irrelevant_rule" },
+        { "const": "too_many_matches" }
+      ]
+    },
+    "skipped_rule": { // struct SkippedRule
+      "type": "object",
+      "required": [ "rule_id", "details", "position" ],
+      "properties": {
+        "rule_id": { "$ref": "#/definitions/rule_id" }, // String
+        "details": { "type": "string" },
+        "position": { "$ref": "#/definitions/position" }
+      }
+    },
+    "core_timing": {  // struct CoreTiming
+      "type": "object",
+      "required": [ "targets", "rules", "max_memory_bytes" ],
+      "properties": {
+        "targets": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/target_time" }
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/rule_id" }  // String
+        },
+        "rules_parse_time": { "type": "number" }, // f64?
+        "max_memory_bytes": { "type": "integer" }
+      }
+    },
+    "target_time": {  // struct TargetTime
+      "type": "object",
+      "required": [ "path", "rule_times", "run_time" ],
+      "properties": {
+        "path": { "type": "string" },
+        "rule_times": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/rule_times" }
+        },
+        "run_time": { "type": "number" }
+      }
+    },
+    "rule_times": { // struct RuleTimes
+      "type": "object",
+      "required": [ "rule_id", "parse_time", "match_time" ],
+      "properties": {
+        "rule_id": { "$ref": "#/definitions/rule_id" }, // String
+        "parse_time": { "type": "number" },
+        "match_time": { "type": "number" }
+      }
+    },
+    "matching_explanation": { // struct MatchingExplanation
+      "type": "object",
+      "required": [ "op", "children", "matches", "loc" ],
+      "properties": {
+        "op": { "$ref": "#/definitions/matching_operation" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/matching_explanation" } // Box it?!
+        },
+        "matches": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/core_match" }
+        },
+        "loc": { "$ref": "#/definitions/location" }
+      }
+    },
+    "matching_operation": { // skipped
+      "oneOf": [
+        { "const": "And" },
+        { "const": "Or" },
+        { "const": "Inside" },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [ { "const": "XPat" }, { "type": "string" } ]
+        },
+        { "const": "Negation" },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [ { "const": "Filter" }, { "type": "string" } ]
+        },
+        { "const": "Taint" },
+        { "const": "TaintSource" },
+        { "const": "TaintSink" },
+        { "const": "TaintSanitizer" },
+        { "const": "EllipsisAndStmts" },
+        { "const": "ClassHeaderAndElems" }
+      ]
+    },
+    "cve_result": { // struct CveResult
+      "type": "object",
+      "required": [ "url", "filename", "funcnames" ],
+      "properties": {
+        "url": { "type": "string" },
+        "filename": { "type": "string" },
+        "funcnames": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "cve_results": {  // type CveResults = Vec<CveResult>;
+      "type": "array",
+      "items": { "$ref": "#/definitions/cve_result" }
+    },
+    "core_match_results": { // struct CoreMatchResults 
+      "type": "object",
+      "required": [ "matches", "errors", "stats" ],
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/core_match" }
+        },
+        "errors": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/core_error" }
+        },
+        "skipped": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/skipped_target" }
+        },
+        "skipped_rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/skipped_rule" }
+        },
+        "explanations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/matching_explanation" }
+        },
+        "stats": { "$ref": "#/definitions/core_stats" },
+        "time": { "$ref": "#/definitions/core_timing" }
+      }
+    },
+    "cli_error": {  // struct CliError
+      "type": "object",
+      "required": [ "code", "level", "type" ],
+      "properties": {
+        "code": { "type": "integer" },
+        "level": { "type": "string" },
+        "type": { "type": "string" },
+        "rule_id": { "$ref": "#/definitions/rule_id" },
+        "message": { "type": "string" },
+        "path": { "type": "string" },
+        "long_msg": { "type": "string" },
+        "short_msg": { "type": "string" },
+        "spans": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/error_span" }
+        },
+        "help": { "type": "string" }
+      }
+    },
+    "error_span": { // struct ErrorSpan
+      "type": "object",
+      "required": [ "file", "start", "end" ],
+      "properties": {
+        "file": { "type": "string" },
+        "start": { "$ref": "#/definitions/position_bis" },
+        "end": { "$ref": "#/definitions/position_bis" },
+        "source_hash": { "type": "string" },
+        "config_start": { "$ref": "#/definitions/position_bis" },
+        "config_end": { "$ref": "#/definitions/position_bis" },
+        "config_path": {
+          "type": [ "array", "null" ],
+          "items": { "type": "string" }
+        },
+        "context_start": { "$ref": "#/definitions/position_bis" },
+        "context_end": { "$ref": "#/definitions/position_bis" }
+      }
+    },
+    "position_bis": { // struct PositionBis
+      "type": "object",
+      "required": [ "line", "col" ],
+      "properties": {
+        "line": { "type": "integer" },
+        "col": { "type": "integer" }
+      }
+    },
+    "cli_match_call_trace": { // skipping
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            { "const": "CliLoc" },
+            {
+              "type": "array",
+              "minItems": 2,
+              "items": false,
+              "prefixItems": [
+                { "$ref": "#/definitions/location" },
+                { "type": "string" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            { "const": "CliCall" },
+            {
+              "type": "array",
+              "minItems": 3,
+              "items": false,
+              "prefixItems": [
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": false,
+                  "prefixItems": [
+                    { "$ref": "#/definitions/location" },
+                    { "type": "string" }
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/cli_match_intermediate_var"
+                  }
+                },
+                { "$ref": "#/definitions/cli_match_call_trace" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "cli_match_dataflow_trace": { // struct CliMatchDataflowTrace
+      "type": "object",
+      "required": [],
+      "properties": {
+        "taint_source": { "$ref": "#/definitions/cli_match_call_trace" },
+        "intermediate_vars": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/cli_match_intermediate_var" }
+        },
+        "taint_sink": { "$ref": "#/definitions/cli_match_call_trace" }
+      }
+    },
+    "cli_match_taint_source": { // struct CliMatchTaintSource
+      "type": "object",
+      "required": [ "location", "content" ],
+      "properties": {
+        "location": { "$ref": "#/definitions/location" },
+        "content": { "type": "string" }
+      }
+    },
+    "cli_match_intermediate_var": { // struct CliMatchIntermediateVar
+      "type": "object",
+      "required": [ "location", "content" ],
+      "properties": {
+        "location": { "$ref": "#/definitions/location" },
+        "content": { "type": "string" }
+      }
+    },
+    "cli_match": {  // struct CliMatch
+      "type": "object",
+      "required": [ "check_id", "path", "start", "end", "extra" ],
+      "properties": {
+        "check_id": { "$ref": "#/definitions/rule_id" },
+        "path": { "type": "string" },
+        "start": { "$ref": "#/definitions/position" },
+        "end": { "$ref": "#/definitions/position" },
+        "extra": { "$ref": "#/definitions/cli_match_extra" }
+      }
+    },
+    "cli_match_extra": {  // struct CliMatchExtra
+      "type": "object",
+      "required": [
+        "fingerprint", "lines", "message", "metadata", "severity",
+        "engine_kind"
+      ],
+      "properties": {
+        "metavars": { "$ref": "#/definitions/metavars" },
+        "fingerprint": { "type": "string" },
+        "lines": { "type": "string" },
+        "message": { "type": "string" },
+        "metadata": { "$ref": "#/definitions/raw_json" },
+        "severity": { "type": "string" },
+        "fix": { "type": "string" },
+        "fix_regex": { "$ref": "#/definitions/fix_regex" },
+        "is_ignored": { "type": "boolean" },
+        "sca_info": { "$ref": "#/definitions/sca_info" },
+        "fixed_lines": { "type": "array", "items": { "type": "string" } },
+        "dataflow_trace": {
+          "$ref": "#/definitions/cli_match_dataflow_trace"
+        },
+        "engine_kind": { "$ref": "#/definitions/engine_kind" }
+      }
+    },
+    "fix_regex": {  // struct FixRegex
+      "type": "object",
+      "required": [ "regex", "replacement" ],
+      "properties": {
+        "regex": { "type": "string" },
+        "replacement": { "type": "string" },
+        "count": { "type": "integer" }
+      }
+    },
+    "cli_output_extra": { // struct CliOutputExtra
+      "type": "object",
+      "required": [ "paths" ],
+      "properties": {
+        "paths": { "$ref": "#/definitions/cli_paths" },
+        "time": { "$ref": "#/definitions/cli_timing" },
+        "explanations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/matching_explanation" }
+        }
+      }
+    },
+    "cli_paths": {  // struct CliPaths
+      "type": "object",
+      "required": [ "scanned" ],
+      "properties": {
+        "scanned": { "type": "array", "items": { "type": "string" } },
+        "_comment": { "type": "string" },
+        "skipped": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/cli_skipped_target" }
+        }
+      }
+    },
+    "cli_skipped_target": { // struct CliSkippedTarget
+      "type": "object",
+      "required": [ "path", "reason" ],
+      "properties": {
+        "path": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "cli_timing": { // struct CliTiming
+      "type": "object",
+      "required": [
+        "rules", "rules_parse_time", "profiling_times", "targets",
+        "total_bytes"
+      ],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/rule_id_dict" }
+        },
+        "rules_parse_time": { "type": "number" },
+        "profiling_times": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "targets": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/cli_target_times" }
+        },
+        "total_bytes": { "type": "integer" },
+        "max_memory_bytes": { "type": "integer" }
+      }
+    },
+    "rule_id_dict": { // struct RuleIdDict
+      "type": "object",
+      "required": [ "id" ],
+      "properties": { "id": { "$ref": "#/definitions/rule_id" } }
+    },
+    "cli_target_times": { // struct CliTargetTimes
+      "type": "object",
+      "required": [
+        "path", "num_bytes", "match_times", "parse_times", "run_time"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "num_bytes": { "type": "integer" },
+        "match_times": { "type": "array", "items": { "type": "number" } },
+        "parse_times": { "type": "array", "items": { "type": "number" } },
+        "run_time": { "type": "number" }
+      }
+    },
+    "sca_info": { // struct ScaInfo
+      "type": "object",
+      "required": [
+        "reachable", "reachability_rule", "sca_finding_schema",
+        "dependency_match"
+      ],
+      "properties": {
+        "reachable": { "type": "boolean" },
+        "reachability_rule": { "type": "boolean" },
+        "sca_finding_schema": { "type": "integer" },
+        "dependency_match": { "$ref": "#/definitions/dependency_match" }
+      }
+    },
+    "dependency_match": { // struct DependencyMatch
+      "type": "object",
+      "required": [ "dependency_pattern", "found_dependency", "lockfile" ],
+      "properties": {
+        "dependency_pattern": { "$ref": "#/definitions/dependency_pattern" },
+        "found_dependency": { "$ref": "#/definitions/found_dependency" },
+        "lockfile": { "type": "string" }
+      }
+    },
+    "ecosystem": {  // enum Ecosystem
+      "oneOf": [
+        { "const": "npm" },
+        { "const": "pypi" },
+        { "const": "gem" },
+        { "const": "gomod" },
+        { "const": "cargo" },
+        { "const": "maven" }
+      ]
+    },
+    "transitivity": { // enum Transitivity
+      "oneOf": [
+        { "const": "direct" },
+        { "const": "transitive" },
+        { "const": "unknown" }
+      ]
+    },
+    "dependency_pattern": { // DependencyPattern
+      "type": "object",
+      "required": [ "ecosystem", "package", "semver_range" ],
+      "properties": {
+        "ecosystem": { "$ref": "#/definitions/ecosystem" },
+        "package": { "type": "string" },
+        "semver_range": { "type": "string" }
+      }
+    },
+    "found_dependency": { // struct FoundDependency 
+      "type": "object",
+      "required": [
+        "package", "version", "ecosystem", "allowed_hashes", "transitivity"
+      ],
+      "properties": {
+        "package": { "type": "string" },
+        "version": { "type": "string" },
+        "ecosystem": { "$ref": "#/definitions/ecosystem" },
+        "allowed_hashes": {
+          "type": "object",
+          "additionalProperties": { // struct AllowedHashes
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "resolved_url": { "type": "string" },
+        "transitivity": { "$ref": "#/definitions/transitivity" },
+        "line_number": { "type": "integer" }
+      }
+    },
+    "api_scans_findings": { // struct ApiScansFindings 
+      "type": "object",
+      "required": [
+        "findings", "token", "gitlab_token", "searched_paths", "rule_ids",
+        "cai_ids"
+      ],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/finding" }
+        },
+        "token": { "type": [ "string", "null" ] },
+        "gitlab_token": { "type": [ "string", "null" ] },
+        "searched_paths": { "type": "array", "items": { "type": "string" } },
+        "rule_ids": { "type": "array", "items": { "type": "string" } },
+        "cai_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "finding": {  // struct Finding
+      "type": "object",
+      "required": [
+        "check_id", "path", "line", "column", "end_line", "end_column",
+        "message", "severity", "index", "commit_date", "syntactic_id",
+        "metadata", "is_blocking"
+      ],
+      "properties": {
+        "check_id": { "$ref": "#/definitions/rule_id" },
+        "path": { "type": "string" },
+        "line": { "type": "integer" },
+        "column": { "type": "integer" },
+        "end_line": { "type": "integer" },
+        "end_column": { "type": "integer" },
+        "message": { "type": "string" },
+        "severity": { "type": "integer" },
+        "index": { "type": "integer" },
+        "commit_date": { "type": "string" },
+        "syntactic_id": { "type": "string" },
+        "match_based_id": { "type": "string" },
+        "metadata": { "$ref": "#/definitions/raw_json" },
+        "is_blocking": { "type": "boolean" },
+        "fixed_lines": { "type": "array", "items": { "type": "string" } },
+        "sca_info": { "$ref": "#/definitions/sca_info" },
+        "dataflow_trace": {
+          "$ref": "#/definitions/cli_match_dataflow_trace"
+        }
+      }
+    }
+  }
+}

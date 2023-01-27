@@ -116,14 +116,14 @@ pub fn find_files_simple(path: &str) -> Vec<String> {
 // ----- START read_file_to_string
 
 // read a file and return a String.
-pub fn read_file_to_string(file_path: &str) -> io::Result<String> {
+pub(crate) fn read_file_to_string(file_path: &str) -> io::Result<String> {
     fs::read_to_string(file_path)
 }
 
 // ----- END read_file_to_string
 
 // ----- START write_string_to_file
-pub fn write_string_to_file(filename: &str, data: &str) -> io::Result<()> {
+pub(crate) fn write_string_to_file(filename: &str, data: &str) -> io::Result<()> {
     let mut file = fs::File::create(filename)?;
     file.write_all(data.as_bytes())?;
     Ok(())
@@ -164,6 +164,15 @@ mod tests {
     fn test_find_files_include() {
         let mut control = CONTROL_FILES.map(String::from).to_vec();
         let mut results = find_files("tests", Some(rule_extensions()), None);
+        // sort the results before comparison because order of file read is not guaranteed.
+        assert_eq!(results.sort(), control.sort());
+    }
+
+    // test for find_files_simple().
+    #[test]
+    fn test_find_files_simple() {
+        let mut control = CONTROL_FILES.map(String::from).to_vec();
+        let mut results = find_files_simple("tests");
         // sort the results before comparison because order of file read is not guaranteed.
         assert_eq!(results.sort(), control.sort());
     }
