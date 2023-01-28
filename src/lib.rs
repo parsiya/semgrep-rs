@@ -10,4 +10,4 @@ pub use rules::policy::{Policy, PolicyIndex};
 pub use rules::semgrep_generic_rule::{GenericRule, GenericRuleExt, GenericRuleFile};
 
 mod output;
-pub use output::cli_output;
+pub use output::cli_output_struct::CliOutput;

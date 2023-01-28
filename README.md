@@ -1,23 +1,25 @@
 # semgrep-rs
-Rust library crate to interact with [Semgrep][semgrep]. Currently, it only
-supports parsing and combining Semgrep rules and a new construct that imitates
-rulesets.
+Rust library crate to interact with [Semgrep][semgrep]. It allows you to:
+
+1. Parse and combine Semgrep rules.
+2. Create and populate and a new construct (policy) that imitates rulesets.
+3. Parse Semgrep's JSON output.
 
 I have used it in my [Personal Semgrep Server][server] project.
 
 [semgrep]: https://semgrep.dev
-[server]: https://github.com/parsiya/personal-semgrep-server/tree/dev
+[server]: https://github.com/parsiya/personal-semgrep-server
 
 ## Future Plans:
 
 1. Add detailed structs and the ability to programmatically create rules.
 2. Handle running and executing Semgrep CLI.
-3. Structs to parse the Semgrep output and do post-processing on the results.
+3. ~~Structs to parse the Semgrep output and do post-processing on the results.~~
 
 **Note: Work in progress.** The interface is subject to change and might break
 backwards compatibility.
 
-## Usage
+## Add it to Your Rust Project
 I have not published the crate yet. You can use the library in two ways right
 now:
 
@@ -39,33 +41,38 @@ Add the following to your project's `Cargo.toml`.
 semgrep-rs = { git = "https://github.com/parsiya/semgrep-rs", branch = "dev" }
 ```
 
+# How do I Use This?
+
+## Rules
+For an example please see: https://github.com/parsiya/personal-semgrep-server.
+
 ## Serialize and Deserialize Rules
 
 ```rust
-// deserialize the rule file into a GenericRuleFile struct.
+// Deserialize the rule file into a GenericRuleFile struct.
 let rule_file: GenericRuleFile =
     GenericRuleFile::from_file("tests/rules/cpp/memcpy-insecure-use.yaml").unwrap();
-// a rule file can have multiple rules, the process is the same.
+// A rule file can have multiple rules, the process is the same.
 let rule_file2: GenericRuleFile =
     GenericRuleFile::from_file("tests/rules/multiple-rules.yaml").unwrap();
 
-// iterate through all the rules in the file and get their ID.
+// Iterate through all the rules in the file and get their ID.
 for rule in &rule_file2.rules {
     print!("{}", rule.get_id().unwrap());
 }
 
-// you can serialize them back to YAML.
+// You can serialize them back to YAML.
 let yaml_string: String = rule_file.to_string().unwrap();
 
-// usually rule files only have one rule in them, if you have a GenericRuleFile
+// Usually rule files only have one rule, if you have a GenericRuleFile
 // with multiple rules, you can create rule files with only one rule per file
 // with .split().
 let rules: Vec<GenericRuleFile> = rule_file2.split();
 for rule in &rules {
     let mut path = "tests/".to_string();
-    // each rule file has only one rule so we will just use that one's ID.
+    // Each rule file has only one rule so we will just use that one's ID.
     path.push_str(rule.rules[0].get_id().unwrap());
-    // store the result in a file.
+    // Store the result in a file.
     let err = utils::write_string_to_file(&path, &rule.to_string().unwrap());
 }
 ```
@@ -88,10 +95,10 @@ and add each one individually.
 overwrite them. See below for a solution.
 
 ```rust
-// create a simple rule index.
+// Create a simple rule index.
 let simple_gri: GenericRuleIndex =
     GenericRuleIndex::from_path_simple("tests/rules").unwrap();
-// get all rules IDs in the index.
+// Get all rules IDs in the index.
 let ids: Vec<String> = simple_gri.get_ids();
 ```
 
@@ -102,10 +109,10 @@ ignores rule test files ending in `.test.yaml`, `.test.yml` and
 You can use your own `Option<Vec<&str>>` for include and exclude.
 
 ```rust
-// don't include the dot for the include vector.
+// Don't include the dot for the include vector.
 let include = vec!["ext1", "ext2"];
-// for exclude, you need to specify how the file ends.
-// including the dot here helps prevent skipping files like "overflow-test.yml".
+// For exclude, you need to specify how the file ends.
+// Including the dot here helps prevent skipping files like "overflow-test.yml".
 let exclude = vec![".test.ext1", ".test.ext2"];
 
 let custom_gri = GenericRuleIndex::from_path(
@@ -140,7 +147,7 @@ let custom_gri = GenericRuleIndex::from_path(
     "tests/rules",
     include,
     exclude,
-    true,   // create complete rule IDs.
+    true,   // Create complete rule IDs.
 ).unwrap();
 ```
 
@@ -167,16 +174,16 @@ Similar to rules you can create a `Policy` object from a YAML string and
 serialize it back to YAML, again.
 
 ```rust
-// read a policy from a file.
+// Read a policy from a file.
 let policy1: Policy = Policy::from_file("tests/policies/policy1.yaml").unwrap();
-// we can also create it from a string.
+// We can also create it from a string.
 let content: String = utils::read_file_to_string("tests/policies/policy2.yaml").unwrap();
 let policy2: Policy = Policy::from_string(content).unwrap();
 
-// serialize it to a YAML string (note this doesn't create a rule file).
+// Serialize it to a YAML string (note this doesn't create a rule file).
 let policy1_string: String = policy1.to_yaml().unwrap();
 
-// write it to a file (note this doesn't create a rule file).
+// Write it to a file (note this doesn't create a rule file).
 let res = policy2.to_file("tests/policies/policy2-copy.yaml");
 ```
 
@@ -186,8 +193,8 @@ rules. The `GenericRuleIndex` that we created before comes into play. We can
 `populate` a policy by using the index.
 
 ```rust
-// note: ignores rules that are not found (writes to stderr) and panics on YAML
-// de/serialization errors.
+// Note: this method ignores rules that are not found (writes to stderr) and
+// panics on YAML de/serialization errors.
 policy2.populate(&simple_gri);
 ```
 
@@ -196,7 +203,7 @@ policy that are found in the rule index. This is stored in the `content` field.
 You can write this to a file to pass to Semgrep.
 
 ```rust
-// you can write this to a file for Semgrep usages.
+// You can write this to a file to pass to Semgrep.
 let rule_file: String = policy2.get_content();
 ```
 
@@ -207,16 +214,16 @@ does not check for collisions. If there's a need to implement complete IDs
 (similar to rules) here, it can be done quickly.
 
 ```rust
-// create a policy index from all rules in a path. This will panic on YAML
+// Create a policy index from all rules in a path. This will panic on YAML
 // de/serialization errors and if there are no valid policies in the path.
 let simple_pi: PolicyIndex = PolicyIndex::from_path_simple("tests/policies").unwrap();
 
-// get a policy by ID.
+// Get a policy by ID.
 let pol: Policy = simple_pi.get_policy("policy1").unwrap();
-// get the rule file for it.
+// Get the rule file for it.
 let content: String = pol.get_content();
 
-// you can also iuterate through every policy in the index.
+// You can also iuterate through every policy in the index.
 for (id, pol) in simple_pi.get_index() {
     assert_eq!(id, pol.get_name());
 }
@@ -226,9 +233,9 @@ The simple version only deserializes files with `.yaml/.yml` extensions. You can
 set custom include and exclude extensions like the rule index example above.
 
 ```rust
-// no need to include the dot.
+// No need to include the dot.
 let include = vec!["ext1", "ext2"];
-// for exclude, you need to specify how the file ends.
+// For exclude, you need to specify how the file ends.
 let exclude = vec![".test.ext1", ".test.ext2"];
 
 let custom_pi: PolicyIndex::from_path(
@@ -249,9 +256,68 @@ every rule at the code.
 
 ```rust
 let all_policy: Policy = custom_pi.get_policy("all").unwrap();
-// get the rule file with every rule!
+// Get the rule file that has every rule!
 let all_rules: String = all_policy.get_content();
 ```
+
+## Semgrep Output
+The crate supports parsing Semgrep's output in JSON (not the SARIF one). Use the
+`--json` flag: `semgrep --config p/default --json --output my-results.json`.
+
+```rust
+use semgrep_rs::CliOutput;
+
+// Parse the file.
+let res = CliOutput::from_json_file("result.json").unwrap();
+
+// Print all scanned paths.
+for p in res.paths.scanned {
+    print!("{}", p);
+}
+
+// Go through all results.
+for r in res.results {
+    print!("{}", r.check_id);   // Print the rule ID and path for each result.
+    print!("{}", r.path);
+}
+```
+
+The structs are based on
+https://github.com/returntocorp/semgrep-interfaces/blob/main/semgrep_output_v1.jsonschema.
+I have created an annotated version of it in
+[source-schemas/semgrep_output_v1.jsonschema](source-schemas/semgrep_output_v1.jsonschema).
+
+A few structs are parsed as `serde_json::Value` because I did not know how to
+implement the enums with multiple different field types.
+
+For example `core_match_call_trace` or `CoreMatchCallTrace` is an enum that can
+either be:
+
+1. An array with at least two items. The first item must be the string `CoreLoc`
+   and the second is an object of type `Location`.
+2. An array with at least 2 items:
+    1. The first item is the string `CoreCall`.
+    2. The second item is another array with at least 3 items:
+        1. The first item is `Location`.
+        2. Second item is a `Vec<CoreMatchIntermediateVar>` (another array).
+        3. Third item is a `CoreMatchCallTrace` (which is the parent object).
+
+I can make Rust enums but I have no idea how to make these other objects, yet.
+
+Another one is `core_error_kind` or `CoreErrorKind`. It can be one of:
+
+1. 14 hardcoded strings.
+2. An array with at least two items:
+    1. The first item is the string `Pattern parse error`.
+    2. The second item is a `Vec<String>`.
+3. An array with at least two items:
+    1. The first item is the string `PartialParsing`.
+    2. The second item is a `Vec<Location>`.
+
+The problem here is with choices 2 and 3. We're looking at something like
+`{"Pattern parse error", {"foo", "bar", "baz"}}`. I don't know how to create a
+type like this in the Rust enum. There are no field names so I cannot make an
+object.
 
 # License
 Rust likes dual-licensing like this so here we go.

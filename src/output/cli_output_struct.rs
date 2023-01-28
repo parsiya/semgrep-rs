@@ -52,8 +52,7 @@ pub struct CoreMatch {
 #[derive(Serialize, Deserialize)]
 pub struct CoreMatchExtra {
     pub metavars: Metavars,
-    // pub dataflow_trace: CoreMatchDataflowTrace,
-    pub dataflow_trace: serde_json::Value,
+    pub dataflow_trace: CoreMatchDataflowTrace,
     pub message: Option<String>,
     pub rendered_fix: Option<String>,
     pub engine_kind: EngineKind,
