@@ -33,10 +33,10 @@ impl GenericRuleExt for GenericRule {
 
         // using combinators
         self.get("id")
-            .ok_or_else(|| Error::new("The rule doesn't have and `id` field.".to_string()))
+            .ok_or_else(|| Error::StringError("The rule doesn't have and `id` field.".to_string()))
             .and_then(|i| {
                 i.as_str().ok_or_else(|| {
-                    Error::new("Cannot convert rule's `id` field to string.".to_string())
+                    Error::StringError("Cannot convert rule's `id` field to string.".to_string())
                 })
             })
     }
@@ -121,25 +121,30 @@ impl GenericRuleFile {
     }
 
     // deserialize a YAML string into a GenericRuleFile.
-    pub fn from_yaml(yaml: String) -> Result<GenericRuleFile> {
+    pub fn from_yaml(yaml: &str) -> Result<GenericRuleFile> {
         // deserialize the rule.
-        serde_yaml::from_str::<GenericRuleFile>(&yaml).map_err(|e| Error::new(e.to_string()))
+        serde_yaml::from_str::<GenericRuleFile>(&yaml).map_err(Error::from)
     }
 
     // deserialize a file containing a YAML string into a GenericRuleFile.
     pub fn from_file(file: &str) -> Result<GenericRuleFile> {
         // read the file.
-        read_file_to_string(file)
-            .map_err(|e| Error::new(e.to_string()))
-            // deserialize the rule.
-            .and_then(|st| {
-                serde_yaml::from_str::<GenericRuleFile>(&st).map_err(|e| Error::new(e.to_string()))
-            })
+        let content = read_file_to_string(file)?;
+        // deserialize the rule.
+        serde_yaml::from_str::<GenericRuleFile>(&content).map_err(Error::from)
     }
 
     // serialize a GenericRuleFile to a YAML string.
     pub fn to_string(&self) -> Result<String> {
-        serde_yaml::to_string(&self).map_err(|e| Error::new(e.to_string()))
+        serde_yaml::to_string(&self).map_err(Error::from)
+    }
+
+    /// validate a YAML string that has a rulefile.
+    pub fn validate_yaml(yaml: &str) -> Result<()> {
+        match GenericRuleFile::from_yaml(yaml) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }
 

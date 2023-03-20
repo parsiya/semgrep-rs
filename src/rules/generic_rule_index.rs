@@ -15,7 +15,7 @@ pub struct GenericRuleIndex {
 }
 
 impl GenericRuleIndex {
-    fn new(complete: bool) -> GenericRuleIndex {
+    pub fn new(complete: bool) -> GenericRuleIndex {
         GenericRuleIndex {
             index: HashMap::new(),
             complete,
@@ -34,13 +34,14 @@ impl GenericRuleIndex {
         self.get_ids().len()
     }
 
-    pub fn from_path_simple(path: &str) -> Result<GenericRuleIndex> {
-        GenericRuleIndex::from_path(path, None, None, false)
+    // create and return a new GenericRuleIndex from the files in paths.
+    pub fn from_paths_simple(path: Vec<&str>) -> Result<GenericRuleIndex> {
+        GenericRuleIndex::from_paths(path, None, None, false)
     }
 
-    // create and return a new GenericRuleIndex.
-    pub fn from_path(
-        path: &str,
+    // create and return a new GenericRuleIndex from the files in paths.
+    pub fn from_paths(
+        path: Vec<&str>,
         include: Option<Vec<&str>>,
         exclude: Option<Vec<&str>>,
         complete: bool,
@@ -52,13 +53,12 @@ impl GenericRuleIndex {
         // };
         // Ok(gri)
 
-        create_generic_rule_index(&path, include, exclude, complete)
-            .map(|index| {
-                let mut gri = GenericRuleIndex::new(complete);
-                gri.index = index;
-                gri
-            })
-            .map_err(|e| Error::new(e.to_string()))
+        generic_rule_index_from_paths(path, include, exclude, complete).map(|index| {
+            let mut gri = GenericRuleIndex::new(complete);
+            gri.index = index;
+            gri
+        })
+        // .map_err(|e| Error::new(e.to_string()))
     }
 
     // creates a RuleFile (that represents a Policy) with the provided rule IDs.
@@ -108,8 +108,8 @@ impl GenericRuleIndex {
 // much dependent on the path of the registry passed to the server.
 //
 // If `complete` is false, just the rule ID from the file will be used.
-fn create_generic_rule_index(
-    path: &str,
+fn generic_rule_index_from_paths(
+    paths: Vec<&str>,
     include: Option<Vec<&str>>,
     exclude: Option<Vec<&str>>,
     complete: bool,
@@ -118,12 +118,22 @@ fn create_generic_rule_index(
     // TODO is this needed? Supposedly we will check the path before calling this function.
     // utils::check_path(&path)?;
 
-    let rule_paths: Vec<String> = find_files(path, include, exclude);
+    let mut rule_files: Vec<String> = Vec::new();
 
+    for p in paths {
+        rule_files.extend(find_files(p, &include, &exclude));
+    }
+    generic_rule_index_from_files(rule_files, complete)
+}
+
+fn generic_rule_index_from_files(
+    rule_files: Vec<String>,
+    complete: bool,
+) -> Result<HashMap<String, GenericRule>> {
     let mut rule_index: HashMap<String, GenericRule> = HashMap::new();
 
-    for rule_file_path in rule_paths {
-        let content = match read_file_to_string(&rule_file_path) {
+    for r in rule_files {
+        let content = match read_file_to_string(&r) {
             Ok(cn) => cn,
             Err(e) => {
                 // TODO: need better error logging
@@ -133,7 +143,7 @@ fn create_generic_rule_index(
         };
 
         // create a rule file from the string
-        let rule_file = match GenericRuleFile::from_yaml(content) {
+        let rule_file = match GenericRuleFile::from_yaml(&content) {
             Ok(rf) => rf,
             Err(e) => {
                 // TODO: need better error logging
@@ -143,8 +153,7 @@ fn create_generic_rule_index(
         };
 
         // get the file index
-        let file_index: HashMap<String, GenericRule> =
-            rule_file.create_index(&rule_file_path, complete);
+        let file_index: HashMap<String, GenericRule> = rule_file.create_index(&r, complete);
 
         // merge it into the main index
         rule_index.extend(file_index);

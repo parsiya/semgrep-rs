@@ -5,14 +5,16 @@ use crate::CliOutput;
 impl CliOutput {
     // Deserialize a JSON string into a CliOutput object.
     pub fn from_json(str: &str) -> Result<CliOutput> {
-        serde_json::from_str::<CliOutput>(str).map_err(|e| Error::new(e.to_string()))
+        serde_json::from_str::<CliOutput>(str).map_err(Error::from)
     }
 
     // Read the JSON string from a file.
     pub fn from_json_file(file_path: &str) -> Result<CliOutput> {
-        read_file_to_string(file_path)
-            .map_err(|e| Error::new(e.to_string()))
-            .and_then(|str| CliOutput::from_json(&str))
+        read_file_to_string(file_path).map(|str| CliOutput::from_json(&str))?
+
+        // read_file_to_string(file_path)
+        //     .map_err(|e| Error::new(e.to_string()))
+        //     .and_then(|str| CliOutput::from_json(&str))
     }
 }
 

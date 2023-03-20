@@ -11,3 +11,7 @@ pub use rules::semgrep_generic_rule::{GenericRule, GenericRuleExt, GenericRuleFi
 
 mod output;
 pub use output::cli_output_struct::CliOutput;
+
+mod run;
+pub use run::args::Args;
+pub use run::output::Output;

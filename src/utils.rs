@@ -12,7 +12,7 @@ pub fn check_path(path: &str) -> Result<bool> {
     // check if path exists.
     if !Path::exists(path_path) {
         // return with an error.
-        return Err(Error::new(format!("{} doesn't exist.", path.to_string())));
+        return Err(Error::StringError("pewpewpew".to_string()));
     }
     // check if path is a directory. Technically, we could have just done this
     // check but we wouldn't know if the path existed vs. is not a directory.
@@ -54,13 +54,13 @@ fn is_hidden(entry: &DirEntry) -> bool {
 // exclude: skip files that end in this (regardless of extension).
 pub fn find_files(
     path: &str,
-    include: Option<Vec<&str>>,
-    exclude: Option<Vec<&str>>,
+    include: &Option<Vec<&str>>,
+    exclude: &Option<Vec<&str>>,
 ) -> Vec<String> {
     // use the default values if include and exclude are not provided.
-    let include_extensions = include.unwrap_or_else(|| rule_extensions());
 
-    let exclude_extensions = exclude.unwrap_or_else(|| test_extensions());
+    let include_extensions = include.clone().unwrap_or_else(|| rule_extensions());
+    let exclude_extensions = exclude.clone().unwrap_or_else(|| test_extensions());
 
     let mut results: Vec<String> = Vec::new();
 
@@ -108,7 +108,7 @@ fn test_extensions() -> Vec<&'static str> {
 
 // simple version of find_files with default values.
 pub fn find_files_simple(path: &str) -> Vec<String> {
-    find_files(path, None, None)
+    find_files(path, &None, &None)
 }
 
 // ----- END find_rules
@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn test_find_files() {
         let mut control = CONTROL_FILES.map(String::from).to_vec();
-        let mut results = find_files("tests", None, None);
+        let mut results = find_files("tests", &None, &None);
         // sort the results before comparison because order of file read is not guaranteed.
         assert_eq!(results.sort(), control.sort());
     }
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn test_find_files_include() {
         let mut control = CONTROL_FILES.map(String::from).to_vec();
-        let mut results = find_files("tests", Some(rule_extensions()), None);
+        let mut results = find_files("tests", &Some(rule_extensions()), &None);
         // sort the results before comparison because order of file read is not guaranteed.
         assert_eq!(results.sort(), control.sort());
     }

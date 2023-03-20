@@ -29,7 +29,7 @@ impl Policy {
 
     // create a new Policy from a YAML string.
     pub fn from_yaml(yaml: &str) -> Result<Policy> {
-        serde_yaml::from_str::<Policy>(&yaml).map_err(|e| Error::new(e.to_string()))
+        serde_yaml::from_str::<Policy>(&yaml).map_err(Error::from)
     }
 
     // create a new Policy from a file.
@@ -41,15 +41,13 @@ impl Policy {
         //         Ok(rs) => Ok(rs),
         //     },
         // }
-
-        read_file_to_string(file)
-            .map_err(|e| Error::new(e.to_string()))
-            .and_then(|str| Policy::from_yaml(&str))
+        let content = read_file_to_string(file)?;
+        Policy::from_yaml(&content)
     }
 
     // serialize the Policy as a YAML string.
     pub fn to_yaml(&self) -> Result<String> {
-        serde_yaml::to_string(&self).map_err(|e| Error::new(e.to_string()))
+        serde_yaml::to_string(&self).map_err(Error::from)
     }
 
     // write the policy to a YAML file.
@@ -60,7 +58,7 @@ impl Policy {
         // }
 
         self.to_yaml()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
             .and_then(|yaml| write_string_to_file(path, &yaml))
     }
 
@@ -78,8 +76,8 @@ impl Policy {
             .to_string()
             // if successful, store it in self.content.
             .map(|str| self.content = str)
-            // otherwise, return any errors.
-            .map_err(|e| Error::new(e.to_string()))
+        // otherwise, return any errors.
+        // .map_err(|e| Error::new(e.to_string()))
     }
 
     // returns the policy content that can be passed to Semgrep.
@@ -146,10 +144,6 @@ impl PolicyIndex {
         };
         // these can be moved into the Ok() arm of the match, too.
 
-        // TODO: add this to the readme mentioning we should not have a
-        // rule ID or policy named `all`.
-        // TODO: add to readme about the built-in policy named all that can be
-        // called by /r/all or /p/all.
         // create the "all" policy that contains all the rules.
         let all_policy = create_all_policy(ri)?;
         // add it to the index.
@@ -183,7 +177,7 @@ fn create_policy_index(
 ) -> Result<HashMap<String, Policy>> {
     let mut policy_index: HashMap<String, Policy> = HashMap::new();
 
-    let file_paths: Vec<String> = find_files(path, include, exclude);
+    let file_paths: Vec<String> = find_files(path, &include, &exclude);
     for policy_file_path in file_paths {
         let policy_text = match read_file_to_string(&policy_file_path) {
             Ok(cn) => cn,

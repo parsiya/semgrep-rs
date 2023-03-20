@@ -2,7 +2,7 @@
 name = "semgrep-rs"
 version = "0.1.0"
 authors = ["Parsia"]
-description = "Rust library to parse and interact with Semgrep rules."
+description = "Rust library to interact with Semgrep."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/parsiya/semgrep-rs"
 edition = "2021"
@@ -15,6 +15,7 @@ serde_with = "2.0.1"
 walkdir = "2"
 log = "0.4"
 serde_json = "1.0"
+tempfile = "3"
 
 [dev-dependencies]
 test-case = "2.2.2"
