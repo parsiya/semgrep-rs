@@ -32,7 +32,7 @@ impl OutputFormat {
 
     /// convert a string to an OutputFormat.
     pub fn from_str(s: &str) -> Result<OutputFormat, String> {
-        match s {
+        match s.to_lowercase().as_str() {
             "text" => Ok(OutputFormat::Text),
             "emacs" => Ok(OutputFormat::Emacs),
             "json" => Ok(OutputFormat::JSON),

@@ -6,7 +6,6 @@ use std::fs;
 
 // clap CLI struct.
 #[derive(Parser, Debug)]
-// #[command(override_usage = "./cli ZZZZ -r path/to/rules/ [-p path/to/policies/] [-s 9090] [-q]")]
 #[command(version = "0.1")]
 #[command(about = "semgrep-rs usage example", long_about = None)]
 struct Cli {
