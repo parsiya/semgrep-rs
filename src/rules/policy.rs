@@ -126,19 +126,19 @@ impl PolicyIndex {
         self.index.keys().len()
     }
 
-    // return a new PolicyIndex populated with policies in the path.
+    // return a new PolicyIndex populated with policies in the paths.
     // only index extensions in include and no files that end in exclude.
     // Deserialize them into a Policy and store them in the index. Key: policy
     // name, Value: the Policy object.
-    pub fn from_path(
-        path: &str,
+    pub fn from_paths(
+        paths: Vec<&str>,
         include: Option<Vec<&str>>,
         exclude: Option<Vec<&str>>,
         ri: &GenericRuleIndex,
     ) -> Result<PolicyIndex> {
         let mut pi = PolicyIndex::new();
 
-        match create_policy_index(path, include, exclude, ri) {
+        match create_policy_index(paths, include, exclude, ri) {
             Ok(index) => pi.index = index,
             Err(e) => return Error::wrap_string(e.to_string()),
         };
@@ -151,9 +151,9 @@ impl PolicyIndex {
         Ok(pi)
     }
 
-    // same as from_path but uses the default policy file extensions.
-    pub fn from_path_simple(path: &str, ri: &GenericRuleIndex) -> Result<PolicyIndex> {
-        PolicyIndex::from_path(path, None, None, ri)
+    // same as from_paths but uses the default policy file extensions.
+    pub fn from_paths_simple(paths: Vec<&str>, ri: &GenericRuleIndex) -> Result<PolicyIndex> {
+        PolicyIndex::from_paths(paths, None, None, ri)
     }
 
     // creates a policy index that only contains the p/all policy.
@@ -170,15 +170,20 @@ impl PolicyIndex {
 // exclude. Deserialize each into a Policy and store them in the index where
 // key: policy name and value: the Policy object.
 fn create_policy_index(
-    path: &str,
+    paths: Vec<&str>,
     include: Option<Vec<&str>>,
     exclude: Option<Vec<&str>>,
     ri: &GenericRuleIndex,
 ) -> Result<HashMap<String, Policy>> {
     let mut policy_index: HashMap<String, Policy> = HashMap::new();
 
-    let file_paths: Vec<String> = find_files(path, &include, &exclude);
-    for policy_file_path in file_paths {
+    let mut policy_files: Vec<String> = Vec::new();
+
+    for p in paths {
+        policy_files.extend(find_files(p, &include, &exclude));
+    }
+
+    for policy_file_path in policy_files {
         let policy_text = match read_file_to_string(&policy_file_path) {
             Ok(cn) => cn,
             Err(e) => {

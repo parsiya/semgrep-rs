@@ -96,8 +96,9 @@ overwrite them. See below for a solution.
 
 ```rust
 // Create a simple rule index.
+let paths: Vec<&str> = vec!["test/rules"];
 let simple_gri: GenericRuleIndex =
-    GenericRuleIndex::from_path_simple("tests/rules").unwrap();
+    GenericRuleIndex::from_paths_simple(paths).unwrap();
 // Get all rules IDs in the index.
 let ids: Vec<String> = simple_gri.get_ids();
 ```
@@ -114,9 +115,11 @@ let include = vec!["ext1", "ext2"];
 // For exclude, you need to specify how the file ends.
 // Including the dot here helps prevent skipping files like "overflow-test.yml".
 let exclude = vec![".test.ext1", ".test.ext2"];
+// Vector of paths to scan.
+let paths: Vec<&str> = vec!["test/rules"];
 
-let custom_gri = GenericRuleIndex::from_path(
-    "tests/rules",
+let custom_gri = GenericRuleIndex::from_paths(
+    paths,
     Option<include>,
     Option<exclude>,
     false,
@@ -143,8 +146,10 @@ policies below). So you can specify if you want simple or complete rule IDs.
 **In both cases you have to make sure you don't have rule ID collisions.**
 
 ```rust
-let custom_gri = GenericRuleIndex::from_path(
-    "tests/rules",
+// Vector of paths to scan.
+let paths: Vec<&str> = vec!["test/rules"];
+let custom_gri = GenericRuleIndex::from_paths(
+    paths,
     include,
     exclude,
     true,   // Create complete rule IDs.
@@ -216,7 +221,9 @@ does not check for collisions. If there's a need to implement complete IDs
 ```rust
 // Create a policy index from all rules in a path. This will panic on YAML
 // de/serialization errors and if there are no valid policies in the path.
-let simple_pi: PolicyIndex = PolicyIndex::from_path_simple("tests/policies").unwrap();
+// Vector of paths to scan.
+let paths: Vec<&str> = vec!["test/rules"];
+let simple_pi: PolicyIndex = PolicyIndex::from_paths_simple(paths).unwrap();
 
 // Get a policy by ID.
 let pol: Policy = simple_pi.get_policy("policy1").unwrap();
@@ -237,9 +244,11 @@ set custom include and exclude extensions like the rule index example above.
 let include = vec!["ext1", "ext2"];
 // For exclude, you need to specify how the file ends.
 let exclude = vec![".test.ext1", ".test.ext2"];
+// Vector of paths to scan.
+let paths: Vec<&str> = vec!["test/rules"];
 
-let custom_pi: PolicyIndex::from_path(
-    "tests/policies",
+let custom_pi: PolicyIndex::from_paths(
+    paths,
     Option<include>,
     Option<exclude>,
 ).unwrap();
