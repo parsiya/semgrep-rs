@@ -34,9 +34,17 @@ impl GenericRuleIndex {
         self.get_ids().len()
     }
 
-    // create and return a new GenericRuleIndex from the files in paths.
+    // simplified method to create and return a new GenericRuleIndex from the
+    // files in paths.
     pub fn from_paths_simple(path: Vec<&str>) -> Result<GenericRuleIndex> {
         GenericRuleIndex::from_paths(path, None, None, false)
+    }
+
+    // simplified method to create and return a new GenericRuleIndex from the
+    // files in one path.
+    pub fn from_path_simple(path: &str) -> Result<GenericRuleIndex> {
+        let paths: Vec<&str> = vec![path];
+        GenericRuleIndex::from_paths_simple(paths)
     }
 
     // create and return a new GenericRuleIndex from the files in paths.
@@ -59,6 +67,17 @@ impl GenericRuleIndex {
             gri
         })
         // .map_err(|e| Error::new(e.to_string()))
+    }
+
+    // create and return a new GenericRuleIndex from the files in one path.
+    pub fn from_path(
+        path: &str,
+        include: Option<Vec<&str>>,
+        exclude: Option<Vec<&str>>,
+        complete: bool,
+    ) -> Result<GenericRuleIndex> {
+        let paths: Vec<&str> = vec![path];
+        GenericRuleIndex::from_paths(paths, include, exclude, complete)
     }
 
     // creates a RuleFile (that represents a Policy) with the provided rule IDs.

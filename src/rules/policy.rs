@@ -151,9 +151,26 @@ impl PolicyIndex {
         Ok(pi)
     }
 
+    // same as from_paths but only creates a policy for a single path.
+    pub fn from_path(
+        path: &str,
+        include: Option<Vec<&str>>,
+        exclude: Option<Vec<&str>>,
+        ri: &GenericRuleIndex,
+    ) -> Result<PolicyIndex> {
+        let paths: Vec<&str> = vec![path];
+        PolicyIndex::from_paths(paths, include, exclude, ri)
+    }
+
     // same as from_paths but uses the default policy file extensions.
     pub fn from_paths_simple(paths: Vec<&str>, ri: &GenericRuleIndex) -> Result<PolicyIndex> {
         PolicyIndex::from_paths(paths, None, None, ri)
+    }
+
+    // same as from_paths_simple but only creates a policy for a single path.
+    pub fn from_path_simple(path: &str, ri: &GenericRuleIndex) -> Result<PolicyIndex> {
+        let paths: Vec<&str> = vec![path];
+        PolicyIndex::from_paths_simple(paths, ri)
     }
 
     // creates a policy index that only contains the p/all policy.

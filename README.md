@@ -97,10 +97,8 @@ and add each one individually.
 overwrite them. See below for a solution.
 
 ```rust
-// Create a simple rule index.
-let paths: Vec<&str> = vec!["test/rules"];
 let simple_gri: GenericRuleIndex =
-    GenericRuleIndex::from_paths_simple(paths).unwrap();
+    GenericRuleIndex::from_path_simple("test/rules").unwrap();
 // Get all rules IDs in the index.
 let ids: Vec<String> = simple_gri.get_ids();
 ```
@@ -117,16 +115,17 @@ let include = vec!["ext1", "ext2"];
 // For exclude, you need to specify how the file ends.
 // Including the dot here helps prevent skipping files like "overflow-test.yml".
 let exclude = vec![".test.ext1", ".test.ext2"];
-// Vector of paths to scan.
-let paths: Vec<&str> = vec!["test/rules"];
 
-let custom_gri = GenericRuleIndex::from_paths(
-    paths,
+let custom_gri = GenericRuleIndex::from_path(
+    "test/rules",
     Option<include>,
     Option<exclude>,
     false,
 ).unwrap();
 ```
+
+You can also pass multiple paths by using the `from_paths` and
+`from_paths_simple` methods.
 
 ### Note About Errors
 If a file is not accessible or it cannot be deserialized into a struct, the
@@ -148,10 +147,8 @@ policies below). So you can specify if you want simple or complete rule IDs.
 **In both cases you have to make sure you don't have rule ID collisions.**
 
 ```rust
-// Vector of paths to scan.
-let paths: Vec<&str> = vec!["test/rules"];
-let custom_gri = GenericRuleIndex::from_paths(
-    paths,
+let custom_gri = GenericRuleIndex::from_path(
+    "test/rules",
     include,
     exclude,
     true,   // Create complete rule IDs.
@@ -223,9 +220,7 @@ does not check for collisions. If there's a need to implement complete IDs
 ```rust
 // Create a policy index from all rules in a path. This will panic on YAML
 // de/serialization errors and if there are no valid policies in the path.
-// Vector of paths to scan.
-let paths: Vec<&str> = vec!["test/rules"];
-let simple_pi: PolicyIndex = PolicyIndex::from_paths_simple(paths).unwrap();
+let simple_pi: PolicyIndex = PolicyIndex::from_paths_simple("test/rules").unwrap();
 
 // Get a policy by ID.
 let pol: Policy = simple_pi.get_policy("policy1").unwrap();
@@ -246,11 +241,9 @@ set custom include and exclude extensions like the rule index example above.
 let include = vec!["ext1", "ext2"];
 // For exclude, you need to specify how the file ends.
 let exclude = vec![".test.ext1", ".test.ext2"];
-// Vector of paths to scan.
-let paths: Vec<&str> = vec!["test/rules"];
 
 let custom_pi: PolicyIndex::from_paths(
-    paths,
+    "test/rules",
     Option<include>,
     Option<exclude>,
 ).unwrap();
@@ -258,6 +251,9 @@ let custom_pi: PolicyIndex::from_paths(
 
 The policy index is useful if you want to create your own server and serve
 policies to Semgrep.
+
+You can also pass multiple paths by using the `from_paths` and
+`from_paths_simple` methods.
 
 ### The Special "all" Policy
 The crate automatically creates an special policy named `all`. This policy
