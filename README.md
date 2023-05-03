@@ -4,17 +4,21 @@ Rust library crate to interact with [Semgrep][semgrep]. It allows you to:
 1. Parse and combine Semgrep rules.
 2. Create and populate and a new construct (policy) that imitates rulesets.
 3. Parse Semgrep's JSON output.
+4. Run Semgrep CLI by passing the rules as a string and get the results in a struct.
 
-I have used it in my [Personal Semgrep Server][server] project.
+I have used it in my [Personal Semgrep Server][server] project. See also the
+[examples][ex].
 
 [semgrep]: https://semgrep.dev
 [server]: https://github.com/parsiya/personal-semgrep-server
+[ex]: https://github.com/parsiya/semgrep-rs/blob/dev/
 
 ## Future Plans:
 
 1. Add detailed structs and the ability to programmatically create rules.
-2. Handle running and executing Semgrep CLI.
+2. ~~Handle running and executing Semgrep CLI.~~
 3. ~~Structs to parse the Semgrep output and do post-processing on the results.~~
+4. Simple plugin system.
 
 **Note: Work in progress.** The interface is subject to change and might break
 backwards compatibility.
@@ -42,9 +46,7 @@ semgrep-rs = { git = "https://github.com/parsiya/semgrep-rs", branch = "dev" }
 ```
 
 # How do I Use This?
-
-## Rules
-For an example please see: https://github.com/parsiya/personal-semgrep-server.
+See the [examples][ex] or https://github.com/parsiya/personal-semgrep-server.
 
 ## Serialize and Deserialize Rules
 
@@ -327,6 +329,58 @@ The problem here is with choices 2 and 3. We're looking at something like
 `{"Pattern parse error", {"foo", "bar", "baz"}}`. I don't know how to create a
 type like this in the Rust enum. There are no field names so I cannot make an
 object.
+
+## Running Semgrep
+You can also use this crate to run the Semgrep CLI. You can pass the rules as a
+string and get the results in a struct. Create an instance of `Args`:
+
+```rust
+pub struct Args {
+    /// Semgrep rules as a string.
+    pub rules: String,
+    /// value of the Semgrep `metrics` CLI argument, default is `off`
+    /// (`--metrics=off`). Note metrics will be collected regardless of this
+    /// field on certain invocations like `-c=p/default`. See the docs at:
+    /// https://semgrep.dev/docs/metrics/.
+    metrics: Metrics,
+    /// other flags, passed to the tool as-is before scan_paths and separated by
+    /// space.
+    pub extra: Option<Vec<String>>,
+    /// paths scanned with Semgrep.
+    pub paths: Vec<String>,
+    /// the output format
+    pub output_format: OutputFormat,
+}
+```
+
+Like this:
+
+```rust
+
+let rule_as_string = "a string with one or more rules";
+let paths = vec!["scan/code1/".to_string(), "scan/code2/".to_string()];
+let metrics = false;
+
+let format = semgrep_rs::OutputFormat::from_str("json").unwrap();
+// Or just make a format using one of the enums.
+let format2 = semgrep_rs::OutputFormat::JSON;
+
+// pass any other cli switches.
+let extra = vec!["--time".to_string(), "--timeout=10".to_string()];
+
+let args = semgrep_rs::Args::new(
+    rules_as_string, paths, metrics, format, extra
+    );
+
+// See the final command as a string and inspect it.
+print!("{}", args.to_string());
+
+// Run Semgrep and get the result in a struct.
+let results: semgrep_rs::CliOutput = args.execute().unwrap();
+
+// You can also convert it back to JSON to write to disk.
+let bytes: Vec<u8> = results.to_json_bytes().unwrap();
+```
 
 # License
 Rust likes dual-licensing like this so here we go.

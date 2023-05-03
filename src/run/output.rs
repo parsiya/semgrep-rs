@@ -11,7 +11,7 @@ pub struct Output {
 
 impl Output {
     /// Convert a std::process:Output to our semgrep_rs::Output.
-    pub(crate) fn from_result(r: &process::Output) -> Result<Output> {
+    pub fn from_result(r: &process::Output) -> Result<Output> {
         // deserialize the command output in stdout.
         let output_string = String::from_utf8_lossy(&r.stdout).to_string();
 

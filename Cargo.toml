@@ -19,3 +19,6 @@ tempfile = "3"
 
 [dev-dependencies]
 test-case = "2.2.2"
+clap = { version = "4.1.4", features = ["derive"] }
+log = "0.4.17"
+log4rs = "1.2.0"

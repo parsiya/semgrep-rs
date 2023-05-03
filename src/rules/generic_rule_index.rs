@@ -86,7 +86,6 @@ impl GenericRuleIndex {
         self.index.get(rule_id).cloned()
     }
 
-    // TODO: Remove if not needed.
     // combine all the rules in the index into one file and return.
     pub fn get_all(&self) -> GenericRuleFile {
         // instead of iterating and adding all rules, we use create_policy with

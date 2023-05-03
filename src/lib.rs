@@ -14,4 +14,6 @@ pub use output::cli_output_struct::CliOutput;
 
 mod run;
 pub use run::args::Args;
+pub use run::exec::is_installed;
 pub use run::output::Output;
+pub use run::output_format::OutputFormat;

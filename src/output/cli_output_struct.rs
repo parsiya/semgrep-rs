@@ -1,3 +1,4 @@
+use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 
 // Based on
@@ -13,6 +14,17 @@ pub struct CliOutput {
     pub version: Option<String>,
     pub time: Option<CliTiming>,
     pub explanations: Option<Vec<MatchingExplanation>>,
+}
+
+impl CliOutput {
+    /// convert CliOutput to a JSON string.
+    pub fn to_json_string(&self) -> Result<String> {
+        serde_json::to_string(&self).map_err(Error::from)
+    }
+    /// convert CliOutput to JSON bytes.
+    pub fn to_json_bytes(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(&self).map_err(Error::from)
+    }
 }
 
 #[derive(Serialize, Deserialize)]

@@ -1,6 +1,8 @@
-use crate::error::{Error, Result};
-use crate::run::exec;
+use crate::error::Result;
 use crate::CliOutput;
+use crate::OutputFormat;
+
+use super::exec;
 
 /// arguments passed to Semgrep. Note this is a small subset of possible
 /// command-line arguments. You can add any arguments in Extra. For the complete
@@ -9,28 +11,55 @@ use crate::CliOutput;
 /// The final command will look like:
 /// semgrep -c=tmp_file_with_rules --json --metrics=on/off [extra...] scan_paths.
 pub struct Args {
-    /// Semgrep rules as a string instead of a file.
+    /// Semgrep rules as a string.
     pub rules: String,
     /// value of the Semgrep `metrics` CLI argument, default is `off`
     /// (`--metrics=off`). Note metrics will be collected regardless of this
     /// field on certain invocations like `-c=p/default`. See the docs at:
     /// https://semgrep.dev/docs/metrics/.
     metrics: Metrics,
-    /// add other flags here, the contents will be passed to the tool as-is
-    /// before scan_paths and separated by space.
-    extra: Option<Vec<String>>,
+    /// other flags, passed to the tool as-is before scan_paths and separated by
+    /// space.
+    pub extra: Option<Vec<String>>,
     /// paths scanned with Semgrep.
-    paths: Vec<String>,
+    pub paths: Vec<String>,
+    /// the output format
+    pub output_format: OutputFormat,
 }
 
 impl Args {
-    /// return an instance of SemgrepArgs wth default values.
-    pub fn new(rules: String, paths: Vec<String>) -> Args {
+    /// return a new instance of Args.
+    /// # Arguments
+    /// * `rules` - Semgrep rules as a string.
+    /// * `paths` - paths scanned with Semgrep.
+    /// * `metrics` - value of the Semgrep `metrics` CLI argument.
+    /// * `output_format` - the output format (e.g., JSON)
+    /// * `extra` - other flags, passed to the tool as-is.
+    pub fn new(
+        rules: String,
+        paths: Vec<String>,
+        metrics: bool,
+        output_format: OutputFormat,
+        extra: Option<Vec<String>>,
+    ) -> Args {
         Args {
             rules,
-            metrics: Metrics::Off,
-            extra: None,
             paths,
+            metrics: Metrics::from_bool(metrics),
+            output_format,
+            extra,
+        }
+    }
+
+    /// return an instance of SemgrepArgs wth default values.
+    pub fn default(rules: String, paths: Vec<String>) -> Args {
+        // convert paths to a Vec<String>.
+        Args {
+            rules,
+            paths,
+            metrics: Metrics::Off,
+            output_format: OutputFormat::JSON,
+            extra: None,
         }
     }
 
@@ -39,23 +68,35 @@ impl Args {
         self.metrics = Metrics::On;
     }
 
+    /// disable metrics (e.g., pass --metrics=off to the Semgrep CLI). This is
+    /// the default value for metrics.
+    pub fn disable_metrics(&mut self) {
+        self.metrics = Metrics::Off;
+    }
+
+    /// add extra arguments to the Semgrep CLI. This will be appended to the
+    /// current extra arguments.
+    pub fn add_extra(&mut self, extra: Vec<String>) {
+        if let Some(args) = &mut self.extra {
+            args.extend(extra);
+        } else {
+            self.extra = Some(extra);
+        }
+    }
+
     /// return the arguments (except rules) as a string separated by ` `.
     pub fn to_string(&self) -> String {
-        self.to_vector().join(" ")
+        self.to_vec().join(" ")
     }
 
     /// return the arguments (except rules) as a Vec<String>.
-    pub fn to_vector(&self) -> Vec<String> {
-        // start with `--json`.
-        let mut out: Vec<String> = vec!["--json".to_string()];
-        // skipping config because the rules are stored in a String that should
-        // be written to a file before execution.
-
-        // `--metrics on/off`
-        out.push("--metrics".to_string());
+    pub fn to_vec(&self) -> Vec<String> {
+        // start with the output format.
+        let mut out: Vec<String> = vec![self.output_format.to_string()];
+        // `--metrics=on/off`
         out.push(self.metrics.to_string());
 
-        // add arguments in extra.
+        // add the arguments in extra.
         if let Some(args) = &self.extra {
             out.extend(args.to_owned());
         }
@@ -68,7 +109,7 @@ impl Args {
 
     /// run Semgrep and return the results.
     pub fn execute(&self) -> Result<CliOutput> {
-        let res = exec::execute(self)?;
+        let res = exec::internal_exec(self)?;
         // if Semgrep executed successfully but with errors (exit code !=0) then
         // stderr will be empty. We need to read the `errors` key in the output
         // result to read the errors.
@@ -80,26 +121,36 @@ impl Args {
 }
 
 /// values for the Semgrep `metrics` CLI argument. Could have been a simple
-/// boolean but I wanted to practice using Rust's string enums.
+/// boolean but I wanted to practice using Rust's enums. It's a Rube Goldberg
+/// machine.
 enum Metrics {
     On,
     Off,
 }
 
 impl Metrics {
-    /// return "on" or "off".
+    /// return "--metrics=on" or "--metrics=off".
+    #[allow(dead_code)] // make it undead code, har har!
     fn as_str(&self) -> &'static str {
         match self {
-            Metrics::On => "on",
-            Metrics::Off => "off",
+            Metrics::On => "--metrics=on",
+            Metrics::Off => "--metrics=off",
         }
     }
-    /// return "on" or "off" as String. AKA, a Rube Goldberg machine.
+    /// return "--metrics=on" or "--metrics=off" as String.
     fn to_string(&self) -> String {
         // self.as_str().to_string()
         match self {
-            Metrics::On => "on".to_string(),
-            Metrics::Off => "off".to_string(),
+            Metrics::On => "--metrics=on".to_string(),
+            Metrics::Off => "--metrics=off".to_string(),
+        }
+    }
+    /// from_bool returns a Metrics enum from a boolean.
+    fn from_bool(b: bool) -> Metrics {
+        if b {
+            Metrics::On
+        } else {
+            Metrics::Off
         }
     }
 }
@@ -115,20 +166,20 @@ mod tests {
         let paths = vec!["path1".to_string(), "path2".to_string()];
 
         // convert it to a string.
-        let mut args = Args::new(rules, paths);
-        assert_eq!(args.to_string(), "--metrics off path1 path2");
+        let mut args = Args::default(rules, paths);
+        assert_eq!(args.to_string(), "--json --metrics=off path1 path2");
 
         // enable metrics.
         args.enable_metrics();
-        assert_eq!(args.to_string(), "--metrics on path1 path2");
+        assert_eq!(args.to_string(), "--json --metrics=on path1 path2");
     }
 
     #[test]
     fn test_metrics() {
-        assert_eq!(Metrics::On.as_str(), "on");
-        assert_eq!(Metrics::On.to_string(), "on".to_string());
+        assert_eq!(Metrics::On.as_str(), "--metrics=on");
+        assert_eq!(Metrics::On.to_string(), "--metrics=on".to_string());
 
-        assert_eq!(Metrics::Off.as_str(), "off");
-        assert_eq!(Metrics::Off.to_string(), "off".to_string());
+        assert_eq!(Metrics::Off.as_str(), "--metrics=off");
+        assert_eq!(Metrics::Off.to_string(), "--metrics=off".to_string());
     }
 }
