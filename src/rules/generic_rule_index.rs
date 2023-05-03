@@ -36,8 +36,8 @@ impl GenericRuleIndex {
 
     // simplified method to create and return a new GenericRuleIndex from the
     // files in paths.
-    pub fn from_paths_simple(path: Vec<&str>) -> Result<GenericRuleIndex> {
-        GenericRuleIndex::from_paths(path, None, None, false)
+    pub fn from_paths_simple(paths: Vec<&str>) -> Result<GenericRuleIndex> {
+        GenericRuleIndex::from_paths(paths, None, None, false)
     }
 
     // simplified method to create and return a new GenericRuleIndex from the
@@ -49,7 +49,7 @@ impl GenericRuleIndex {
 
     // create and return a new GenericRuleIndex from the files in paths.
     pub fn from_paths(
-        path: Vec<&str>,
+        paths: Vec<&str>,
         include: Option<Vec<&str>>,
         exclude: Option<Vec<&str>>,
         complete: bool,
@@ -61,7 +61,7 @@ impl GenericRuleIndex {
         // };
         // Ok(gri)
 
-        generic_rule_index_from_paths(path, include, exclude, complete).map(|index| {
+        generic_rule_index_from_paths(paths, include, exclude, complete).map(|index| {
             let mut gri = GenericRuleIndex::new(complete);
             gri.index = index;
             gri
