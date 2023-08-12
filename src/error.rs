@@ -9,6 +9,8 @@ pub enum Error {
     JsonError(serde_json::Error),
     YamlError(serde_yaml::Error),
     Utf8Error(string::FromUtf8Error),
+    TemplateError(handlebars::TemplateError),
+    RenderError(handlebars::RenderError),
 }
 
 // impl std::error::Error for Error {}
@@ -20,7 +22,9 @@ impl fmt::Display for Error {
             Error::IoError(e) => write!(f, "IO Error: {}", e),
             Error::JsonError(e) => write!(f, "JSON Error: {}", e),
             Error::YamlError(e) => write!(f, "YAML error: {}", e),
-            Error::Utf8Error(e) => write!(f, "Utf8 error: {}", e.utf8_error()),
+            Error::Utf8Error(e) => write!(f, "UTF8 error: {}", e.utf8_error()),
+            Error::TemplateError(e) => write!(f, "Template error: {}", e),
+            Error::RenderError(e) => write!(f, "Render error: {}", e),
         }
     }
 }
@@ -71,5 +75,17 @@ impl From<serde_yaml::Error> for Error {
 impl From<string::FromUtf8Error> for Error {
     fn from(err: string::FromUtf8Error) -> Self {
         Error::Utf8Error(err)
+    }
+}
+
+impl From<handlebars::TemplateError> for Error {
+    fn from(err: handlebars::TemplateError) -> Self {
+        Error::TemplateError(err)
+    }
+}
+
+impl From<handlebars::RenderError> for Error {
+    fn from(err: handlebars::RenderError) -> Self {
+        Error::RenderError(err)
     }
 }

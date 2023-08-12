@@ -46,9 +46,9 @@ pub struct Location {
 // https://users.rust-lang.org/t/serde-serialize-enum-as-string/37549/2
 #[derive(Serialize, Deserialize)]
 pub enum EngineKind {
-    #[serde(rename = "OSSMatch")]
+    #[serde(rename = "OSS")]
     OSSMatch,
-    #[serde(rename = "ProMatch")]
+    #[serde(rename = "PRO")]
     ProMatch,
 }
 

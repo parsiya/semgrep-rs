@@ -17,3 +17,6 @@ pub use run::args::Args;
 pub use run::exec::is_installed;
 pub use run::output::Output;
 pub use run::output_format::OutputFormat;
+
+mod report;
+pub use report::template::execute_template;

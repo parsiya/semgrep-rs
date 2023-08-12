@@ -1,3 +1,5 @@
+use crate::{Error, Result};
+
 /// values for the semgrep output formats.
 pub enum OutputFormat {
     Text,
@@ -31,7 +33,7 @@ impl OutputFormat {
     }
 
     /// convert a string to an OutputFormat.
-    pub fn from_str(s: &str) -> Result<OutputFormat, String> {
+    pub fn from_str(s: &str) -> Result<OutputFormat> {
         match s.to_lowercase().as_str() {
             "text" => Ok(OutputFormat::Text),
             "emacs" => Ok(OutputFormat::Emacs),
@@ -41,7 +43,7 @@ impl OutputFormat {
             "junit-xml" => Ok(OutputFormat::JUnitXML),
             "sarif" => Ok(OutputFormat::SARIF),
             "vim" => Ok(OutputFormat::Vim),
-            _ => Err(format!("invalid output format: {}", s)),
+            _ => Error::wrap_string(format!("invalid output format: {}", s)),
         }
     }
 }
